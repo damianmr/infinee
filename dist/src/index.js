@@ -1,10 +1,9 @@
+"use strict";
 // import {readFile as rF} from "fs";
 // import {promisify} from "util";
-
+Object.defineProperty(exports, "__esModule", { value: true });
 // const readFile = promisify(rF);
-
-const world = "🗺️";
-
+var world = "🗺️";
 // readFile("tsconfig.json", "utf8")
 // .then((contents) => {
 //   console.log("Reading file!:");
@@ -13,7 +12,9 @@ const world = "🗺️";
 // .catch((err) => {
 //   console.log('o noes!');
 // });
-
-export function hello(word: string = world ): string {
-  return `Hello ${word}!`;
+function hello(word) {
+    if (word === void 0) { word = world; }
+    return "Hello " + word + "!";
 }
+exports.hello = hello;
+//# sourceMappingURL=index.js.map
