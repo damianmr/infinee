@@ -8,6 +8,10 @@ const readFile = promisify(rF);
 
 const TLK_FILENAME = "dialog.tlk";
 
+function parseHeader(fileBuffer: Buffer): any {
+  
+}
+
 export function read(installationPath: string, language: LanguageCode) {
   const filePath: string = join(installationPath, language, TLK_FILENAME);
 

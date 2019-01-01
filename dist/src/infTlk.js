@@ -6,6 +6,8 @@ var path_1 = require("path");
 var util_1 = require("util");
 var readFile = util_1.promisify(fs_1.readFile);
 var TLK_FILENAME = "dialog.tlk";
+function parseHeader(fileBuffer) {
+}
 function read(installationPath, language) {
     var filePath = path_1.join(installationPath, language, TLK_FILENAME);
     console.log("Reading translations file: ", filePath);
