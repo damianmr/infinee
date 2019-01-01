@@ -1,4 +1,3 @@
-// tslint:disable:no-console object-literal-sort-keys
 import { readFile as rF } from "fs";
 import { join } from "path";
 import { SmartBuffer } from "smart-buffer";
@@ -18,7 +17,9 @@ interface IDialogEntry {
   length: number;
 }
 
-interface IPopulatedDialogEntry extends IDialogEntry { text: string; }
+interface IPopulatedDialogEntry extends IDialogEntry {
+  text: string;
+}
 
 interface IDialogsTable {
   signature: string;
@@ -28,17 +29,21 @@ interface IDialogsTable {
   stringsOffset: number;
 }
 
-interface IEmptyDialogsTable extends IDialogsTable { dialogs: IDialogEntry[]; }
-export interface IPopulatedDialogsTable extends IDialogsTable { dialogs: IPopulatedDialogEntry[]; }
+interface IEmptyDialogsTable extends IDialogsTable {
+  dialogs: IDialogEntry[];
+}
+export interface IPopulatedDialogsTable extends IDialogsTable {
+  dialogs: IPopulatedDialogEntry[];
+}
 
 function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
   const r = SmartBuffer.fromBuffer(fileBuffer);
   const fileHeader = {
     signature: r.readString(4),
     version: r.readString(4),
-    unknown: r.readString(2),
+    unknown: r.readString(2), // tslint:disable-line:no-console object-literal-sort-keys
     stringsCount: r.readUInt32LE(),
-    stringsOffset: r.readUInt32LE(),
+    stringsOffset: r.readUInt32LE()
   };
 
   const dialogs = [];
@@ -47,12 +52,12 @@ function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
   for (let i = 0; i < fileHeader.stringsCount; i++) {
     dialogs[i] = {
       unknown: r.readUInt16LE(),
-      soundName: r.readString(8),
+      soundName: r.readString(8), // tslint:disable-line:no-console object-literal-sort-keys
       volumeVariance: r.readUInt32LE(),
       pitchVariance: r.readUInt32LE(),
       relativeOffset: r.readUInt32LE(),
       length: r.readUInt32LE(),
-      text: null,
+      text: null
     };
   }
   return Object.assign({}, fileHeader, { dialogs });
@@ -60,14 +65,15 @@ function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
 
 function populateDialogsTable(
   dialogsFileContents: Buffer,
-  dialogsIndex: IEmptyDialogsTable,
+  dialogsIndex: IEmptyDialogsTable
 ): IPopulatedDialogsTable {
   const r = SmartBuffer.fromBuffer(dialogsFileContents);
   const dialogs: IPopulatedDialogEntry[] = [];
   for (let i = 0; i < dialogsIndex.stringsCount; i++) {
-    r.readOffset = dialogsIndex.stringsOffset + dialogsIndex.dialogs[i].relativeOffset;
+    r.readOffset =
+      dialogsIndex.stringsOffset + dialogsIndex.dialogs[i].relativeOffset;
     dialogs[i] = Object.assign({}, dialogsIndex.dialogs[i], {
-      text: r.readString(dialogsIndex.dialogs[i].length),
+      text: r.readString(dialogsIndex.dialogs[i].length)
     });
   }
 
@@ -76,25 +82,29 @@ function populateDialogsTable(
 
 export function read(
   installationPath: string,
-  language: LanguageCode,
+  language: LanguageCode
 ): Promise<IPopulatedDialogsTable> {
   const filePath: string = join(installationPath, language, TLK_FILENAME);
   // console.log("Reading translations file: ", filePath);
   return new Promise((resolve, reject) => {
-    readFile(filePath, null).then((contents: Buffer) => {
-      const index: IPopulatedDialogsTable = populateDialogsTable(contents, buildDialogsTable(contents));
-      resolve(index);
-    })
-    .catch((err) => {
-      console.log("Error reading dialog.tlk file. ", err);
-      reject({
-        message: `Error reading dialog.tlk file.`,
-        installationPath,
-        language,
-        filePath,
-        originalError: err,
+    readFile(filePath, null)
+      .then((contents: Buffer) => {
+        const index: IPopulatedDialogsTable = populateDialogsTable(
+          contents,
+          buildDialogsTable(contents)
+        );
+        resolve(index);
+      })
+      .catch(err => {
+        console.log("Error reading dialog.tlk file. ", err);
+        reject({
+          filePath,
+          installationPath,
+          language,
+          message: `Error reading dialog.tlk file.`,
+          originalError: err
+        });
       });
-    });
   });
 }
 
