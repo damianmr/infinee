@@ -13,11 +13,14 @@ const KNOWN_STRINGS = [
   { index: 1, value: "No, I'm sorry, none of them sound familiar." },
   { index: 55003, value: "What is their true nature? What price are you talking about?" },
   // tslint:disable-next-line:max-line-length
-  { index: 103240, value: "Only the most worthy and devoted servants of the Foehammer are granted these powerful holy symbols. \n\nSTATISTICS:\n\nEquipped abilities:\n– Strength: +1\n– Magic Resistance: +5%\n– Can memorize one extra 6th- and 7th-level Cleric spell\n\nWeight: 0" },
+  {
+    index: 103240,
+    value:
+      "Only the most worthy and devoted servants of the Foehammer are granted these powerful holy symbols. \n\nSTATISTICS:\n\nEquipped abilities:\n– Strength: +1\n– Magic Resistance: +5%\n– Can memorize one extra 6th- and 7th-level Cleric spell\n\nWeight: 0"
+  }
 ];
 
 describe("Testing the proper reading of dialog.tlk file", () => {
-
   it("should read the file properly", () => {
     return read(MOCK_INSTALL, Language.EnglishUS).then((dialogsIndex: IPopulatedDialogsTable) => {
       expect(dialogsIndex.signature).to.be.equal("TLK ");
@@ -27,16 +30,14 @@ describe("Testing the proper reading of dialog.tlk file", () => {
 
   it("should've read the strings table properly (testing against a few known values)", async () => {
     return read(MOCK_INSTALL, Language.EnglishUS).then((dialogsIndex: IPopulatedDialogsTable) => {
-      KNOWN_STRINGS.forEach(({ index, value }: { index: number, value: string }) => {
+      KNOWN_STRINGS.forEach(({ index, value }: { index: number; value: string }) => {
         expect(dialogsIndex.dialogs[index].text).to.be.equal(value);
       });
     });
   });
-
 });
 
 describe("Getting a text value from the dialogs file", () => {
-
   let dialogsIndex: IPopulatedDialogsTable;
 
   before(async () => {

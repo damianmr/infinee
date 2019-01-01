@@ -63,39 +63,29 @@ function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
   return Object.assign({}, fileHeader, { dialogs });
 }
 
-function populateDialogsTable(
-  dialogsFileContents: Buffer,
-  dialogsIndex: IEmptyDialogsTable
-): IPopulatedDialogsTable {
+function populateDialogsTable(dialogsFileContents: Buffer, dI: IEmptyDialogsTable): IPopulatedDialogsTable {
   const r = SmartBuffer.fromBuffer(dialogsFileContents);
   const dialogs: IPopulatedDialogEntry[] = [];
-  for (let i = 0; i < dialogsIndex.stringsCount; i++) {
-    r.readOffset =
-      dialogsIndex.stringsOffset + dialogsIndex.dialogs[i].relativeOffset;
-    dialogs[i] = Object.assign({}, dialogsIndex.dialogs[i], {
-      text: r.readString(dialogsIndex.dialogs[i].length)
+  for (let i = 0; i < dI.stringsCount; i++) {
+    r.readOffset = dI.stringsOffset + dI.dialogs[i].relativeOffset;
+    dialogs[i] = Object.assign({}, dI.dialogs[i], {
+      text: r.readString(dI.dialogs[i].length)
     });
   }
 
-  return Object.assign({}, dialogsIndex, { dialogs });
+  return Object.assign({}, dI, { dialogs });
 }
 
-export function read(
-  installationPath: string,
-  language: LanguageCode
-): Promise<IPopulatedDialogsTable> {
+export function read(installationPath: string, language: LanguageCode): Promise<IPopulatedDialogsTable> {
   const filePath: string = join(installationPath, language, TLK_FILENAME);
   // console.log("Reading translations file: ", filePath);
   return new Promise((resolve, reject) => {
     readFile(filePath, null)
       .then((contents: Buffer) => {
-        const index: IPopulatedDialogsTable = populateDialogsTable(
-          contents,
-          buildDialogsTable(contents)
-        );
+        const index: IPopulatedDialogsTable = populateDialogsTable(contents, buildDialogsTable(contents));
         resolve(index);
       })
-      .catch(err => {
+      .catch((err) => {
         // console.log("Error reading dialog.tlk file. ", err);
         reject({
           filePath,
