@@ -96,7 +96,7 @@ export function read(
         resolve(index);
       })
       .catch(err => {
-        console.log("Error reading dialog.tlk file. ", err);
+        // console.log("Error reading dialog.tlk file. ", err);
         reject({
           filePath,
           installationPath,
