@@ -5,7 +5,6 @@ import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
 import { promisify } from 'util';
-import { Language } from '../src/constants';
 import { DIALOG_DOT_TLK_FILENAME, getDialogsTable, getText, IPopulatedDialogsTable } from '../src/infTlk';
 import { MOCK_INSTALL } from './constants';
 
@@ -28,6 +27,30 @@ const KNOWN_STRINGS = [
 const BUFFER = readFileSync(TEST_DIALOG_DOT_TLK_FILE_PATH);
 
 describe('Testing the basic parsing of dialog.tlk file', () => {
+  it('fails when given a file with a very short header (parsing will fail)', (done) => {
+    const bogusBuffer = Buffer.from('Bogus Buffer');
+    getDialogsTable(bogusBuffer)
+      .then(() => {
+        // Should not happen
+      })
+      .catch((e) => {
+        expect(e.message.indexOf('read beyond the bounds')).to.be.gt(-1);
+        done();
+      });
+  });
+
+  it('fails when given a file is big enough but unrecognizable', (done) => {
+    const bogusBuffer = Buffer.alloc(1000, 1);
+    getDialogsTable(bogusBuffer)
+      .then(() => {
+        // Should not happen
+      })
+      .catch((e) => {
+        expect(e.message.indexOf('file signature')).to.be.gt(-1);
+        done();
+      });
+  });
+
   it('file header is properly read', () => {
     return getDialogsTable(BUFFER).then((dialogsIndex: IPopulatedDialogsTable) => {
       expect(dialogsIndex.signature).to.be.equal('TLK ');

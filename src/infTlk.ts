@@ -2,6 +2,8 @@ import { SmartBuffer } from 'smart-buffer';
 
 export const DIALOG_DOT_TLK_FILENAME = 'dialog.tlk';
 
+const FILE_SIGNATURE = 'TLK ';
+
 interface IDialogEntry {
   unknown: number;
   soundName: string;
@@ -32,6 +34,7 @@ export interface IPopulatedDialogsTable extends IDialogsTable {
 
 function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
   const r = SmartBuffer.fromBuffer(fileBuffer);
+
   const fileHeader = {
     signature: r.readString(4),
     version: r.readString(4),
@@ -39,6 +42,12 @@ function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
     stringsCount: r.readUInt32LE(),
     stringsOffset: r.readUInt32LE()
   };
+
+  if (fileHeader.signature.indexOf(FILE_SIGNATURE) !== 0) {
+    throw new Error(
+      `Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${fileHeader.signature}" instead.`
+    );
+  }
 
   const dialogs = [];
   // TODO Maybe iterate just once and compare performance results?
@@ -71,10 +80,13 @@ function populateDialogsTable(dialogsFileContents: Buffer, dI: IEmptyDialogsTabl
 }
 
 export function getDialogsTable(dialogsFileBuffer: Buffer): Promise<IPopulatedDialogsTable> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    try {
       const index: IPopulatedDialogsTable = populateDialogsTable(dialogsFileBuffer, buildDialogsTable(dialogsFileBuffer));
       resolve(index);
-      // TODO Add error handling code in case the file is not the dialogs file.
+    } catch(e) {
+      reject(e);
+    }
   });
 }
 
