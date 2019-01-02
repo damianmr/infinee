@@ -1,12 +1,12 @@
-import { readFile as rF } from "fs";
-import { join } from "path";
-import { SmartBuffer } from "smart-buffer";
-import { promisify } from "util";
-import { LanguageCode } from "./constants";
+import { readFile as rF } from 'fs';
+import { join } from 'path';
+import { SmartBuffer } from 'smart-buffer';
+import { promisify } from 'util';
+import { LanguageCode } from './constants';
 
 const readFile = promisify(rF);
 
-const TLK_FILENAME = "dialog.tlk";
+const TLK_FILENAME = 'dialog.tlk';
 
 interface IDialogEntry {
   unknown: number;
@@ -100,7 +100,7 @@ export function read(installationPath: string, language: LanguageCode): Promise<
 
 export function getText(dialogsIndex: IPopulatedDialogsTable, index: number) {
   if (index > dialogsIndex.dialogs.length || index < 0) {
-    throw new Error("Cannot retrieve text. Index out of bounds.");
+    throw new Error('Cannot retrieve text. Index out of bounds.');
   }
 
   return dialogsIndex.dialogs[index].text;
