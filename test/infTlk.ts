@@ -1,12 +1,17 @@
 import { fail } from 'assert';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import { readFileSync } from 'fs';
 import 'mocha';
+import { join } from 'path';
+import { promisify } from 'util';
 import { Language } from '../src/constants';
-import { getText, IPopulatedDialogsTable, read } from '../src/infTlk';
+import { DIALOG_DOT_TLK_FILENAME, getDialogsTable, getText, IPopulatedDialogsTable } from '../src/infTlk';
 import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
+
+const TEST_DIALOG_DOT_TLK_FILE_PATH: string = join(MOCK_INSTALL, 'en_US', DIALOG_DOT_TLK_FILENAME);
 
 const KNOWN_STRINGS = [
   { index: 0, value: '<NO TEXT>' },
@@ -20,16 +25,18 @@ const KNOWN_STRINGS = [
   }
 ];
 
-describe('Testing the proper reading of dialog.tlk file', () => {
-  it('should read the file properly', () => {
-    return read(MOCK_INSTALL, Language.EnglishUS).then((dialogsIndex: IPopulatedDialogsTable) => {
+const BUFFER = readFileSync(TEST_DIALOG_DOT_TLK_FILE_PATH);
+
+describe('Testing the basic parsing of dialog.tlk file', () => {
+  it('file header is properly read', () => {
+    return getDialogsTable(BUFFER).then((dialogsIndex: IPopulatedDialogsTable) => {
       expect(dialogsIndex.signature).to.be.equal('TLK ');
       expect(dialogsIndex.version).to.be.equal('V1  ');
     });
   });
 
   it("should've read the strings table properly (testing against a few known values)", async () => {
-    return read(MOCK_INSTALL, Language.EnglishUS).then((dialogsIndex: IPopulatedDialogsTable) => {
+    return getDialogsTable(BUFFER).then((dialogsIndex: IPopulatedDialogsTable) => {
       KNOWN_STRINGS.forEach(({ index, value }: { index: number; value: string }) => {
         expect(dialogsIndex.dialogs[index].text).to.be.equal(value);
       });
@@ -41,7 +48,7 @@ describe('Getting a text value from the dialogs file', () => {
   let dialogsIndex: IPopulatedDialogsTable;
 
   before(async () => {
-    dialogsIndex = await read(MOCK_INSTALL, Language.EnglishUS);
+    dialogsIndex = await getDialogsTable(BUFFER);
   });
 
   it('should retrieve a text from the index', () => {

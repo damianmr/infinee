@@ -1,12 +1,6 @@
-import { readFile as rF } from 'fs';
-import { join } from 'path';
 import { SmartBuffer } from 'smart-buffer';
-import { promisify } from 'util';
-import { LanguageCode } from './constants';
 
-const readFile = promisify(rF);
-
-const TLK_FILENAME = 'dialog.tlk';
+export const DIALOG_DOT_TLK_FILENAME = 'dialog.tlk';
 
 interface IDialogEntry {
   unknown: number;
@@ -76,25 +70,11 @@ function populateDialogsTable(dialogsFileContents: Buffer, dI: IEmptyDialogsTabl
   return Object.assign({}, dI, { dialogs });
 }
 
-export function read(installationPath: string, language: LanguageCode): Promise<IPopulatedDialogsTable> {
-  const filePath: string = join(installationPath, language, TLK_FILENAME);
-  // console.log("Reading translations file: ", filePath);
-  return new Promise((resolve, reject) => {
-    readFile(filePath, null)
-      .then((contents: Buffer) => {
-        const index: IPopulatedDialogsTable = populateDialogsTable(contents, buildDialogsTable(contents));
-        resolve(index);
-      })
-      .catch((err) => {
-        // console.log("Error reading dialog.tlk file. ", err);
-        reject({
-          filePath,
-          installationPath,
-          language,
-          message: `Error reading dialog.tlk file.`,
-          originalError: err
-        });
-      });
+export function getDialogsTable(dialogsFileBuffer: Buffer): Promise<IPopulatedDialogsTable> {
+  return new Promise((resolve) => {
+      const index: IPopulatedDialogsTable = populateDialogsTable(dialogsFileBuffer, buildDialogsTable(dialogsFileBuffer));
+      resolve(index);
+      // TODO Add error handling code in case the file is not the dialogs file.
   });
 }
 
