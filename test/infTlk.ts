@@ -1,10 +1,8 @@
-import { fail } from 'assert';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { promisify } from 'util';
 import { DIALOG_DOT_TLK_FILENAME, getDialogsTable, getText, IPopulatedDialogsTable } from '../src/infTlk';
 import { MOCK_INSTALL } from './constants';
 
