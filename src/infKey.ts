@@ -2,43 +2,30 @@ import { SmartBuffer } from 'smart-buffer';
 
 export const CHITIN_DOT_KEY_FILENAME = 'chitin.key';
 
-type ResourceTypeID = 0x0001 |
-  0x0004 |
-  0x03e8 |
-  0x03ec | 
-  0x03ed | 
-  0x03ee | 
-  0x03ef | 
-  0x03f0 | 
-  0x03f1 |
-  0x03f4 | 
-  0x03f9;
-
-export const ResourceType: { [id: string]: ResourceTypeID } = {
-  BMP: 0x0001, // 1
-  WAV: 0x0004, // 4
-  BAM: 0x03e8, // tslint:disable-line:object-literal-sort-keys // 1000
-  MOS: 0x03ec, // 1004
-  ITM: 0x03ed, // 1005
-  SPL: 0x03ee, // 1006
-  BCS: 0x03ef, // 1007
-  IDS: 0x03f0, // 1008
-  CRE: 0x03f1, // 1009
-  '2DA': 0x03f4, // 1012
-  BS:  0x03f9 // 1017
+export const enum ResourceTypeID {
+  BMP = 0x0001, // 1
+  WAV = 0x0004, // 4
+  BAM = 0x03e8, // 1000
+  MOS = 0x03ec, // 1004
+  ITM = 0x03ed, // 1005
+  SPL = 0x03ee, // 1006
+  BCS = 0x03ef, // 1007
+  IDS = 0x03f0, // 1008
+  CRE = 0x03f1, // 1009
+  TWO_DA = 0x03f4, // 1012
+  BS = 0x03f9 // 1017
 };
 
-// We don't need to index all resources, this list defines which ones goes to the index.
-const IndexableResourceTypes: { [id in ResourceTypeID]?: true } = {
-  [ResourceType.ITM]: true,
-  [ResourceType.BAM]: true,
-  [ResourceType.BMP]: true,
-  [ResourceType.SPL]: true,
-  [ResourceType.CRE]: true,
-  [ResourceType.IDS]: true,
-  [ResourceType['2DA']]: true,
-  [ResourceType.BS]: true
-};
+const IndexableResourceTypes = [
+  ResourceTypeID.ITM,
+  ResourceTypeID.BAM,
+  ResourceTypeID.BMP,
+  ResourceTypeID.SPL,
+  ResourceTypeID.CRE,
+  ResourceTypeID.IDS,
+  ResourceTypeID.TWO_DA,
+  ResourceTypeID.BS
+];
 
 const FILE_SIGNATURE = 'KEY ';
 
@@ -75,14 +62,13 @@ interface IResourceInfo {
   flags: number;
 }
 
-export type ResourcesByType = { [id in ResourceTypeID]?: IResourceInfo[] };
+interface IResourcesByType { [index: number]: IResourceInfo[] };
 
 export interface IGameResourceIndex {
   header: IKeyHeader;
   bifResources: IBifEntry[];
-  resources: ResourcesByType;
+  resources: IResourcesByType;
 }
-
 
 function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
   const r = SmartBuffer.fromBuffer(fileBuffer);
@@ -97,9 +83,7 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
   };
 
   if (header.signature.indexOf(FILE_SIGNATURE) !== 0) {
-    throw new Error(
-      `Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${header.signature}" instead.`
-    );
+    throw new Error(`Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${header.signature}" instead.`);
   }
 
   r.readOffset = header.bifOffset;
@@ -122,7 +106,7 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
     //   console.warn('starting with ":"');
     // }
     bifResources[i].fileName = fileName;
-   }
+  }
 
   r.readOffset = header.resourceOffset;
 
@@ -138,16 +122,16 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
   // TODO Copying this logic from EEKeeper, but I think is worth checking if a map
   // with <resourceType_resourceName> as key would be more efficient in JavaScript.
   // I'll find out once I start working in the UI logic.
-  const resourcesByType: ResourcesByType = {};
+  const resourcesByType: IResourcesByType = {};
   for (let i = 0; i < header.resourceCount; i++) {
-    if (resources[i].type in IndexableResourceTypes) {
+    if (IndexableResourceTypes.indexOf(resources[i].type) !== -1) {
       const resourceEntry = resources[i];
       const sameTypeResources: IResourceInfo[] = resourcesByType[resourceEntry.type] || [];
       sameTypeResources.push({
         name: resourceEntry.name,
-        bifKeyIndex: (resourceEntry.locator & 0xFFF00000) >> 20, // tslint:disable-line: object-literal-sort-keys no-bitwise
-        locator: resourceEntry.locator & 0x00003FFF, // tslint:disable-line: no-bitwise
-        tileIndex: (resourceEntry.locator & 0x000FC000) >> 14, // tslint:disable-line: no-bitwise
+        bifKeyIndex: (resourceEntry.locator & 0xfff00000) >> 20, // tslint:disable-line: object-literal-sort-keys no-bitwise
+        locator: resourceEntry.locator & 0x00003fff, // tslint:disable-line: no-bitwise
+        tileIndex: (resourceEntry.locator & 0x000fc000) >> 14, // tslint:disable-line: no-bitwise
         resourceType: resourceEntry.type,
         flags: 0
       });
@@ -161,7 +145,7 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
     bifResources,
     header,
     resources: resourcesByType
-  }
+  };
 }
 
 export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<IGameResourceIndex> {
@@ -169,7 +153,7 @@ export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<IGameRes
     try {
       const gameResourceIndex: IGameResourceIndex = buildGameIndex(chitinDotKeyFile);
       resolve(gameResourceIndex);
-    } catch(e) {
+    } catch (e) {
       reject(e);
     }
   });
