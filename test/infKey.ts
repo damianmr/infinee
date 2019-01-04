@@ -48,3 +48,15 @@ describe('Testing basic parsing of chitin.key file', () => {
     });
   });
 });
+
+describe('Getting values from the index', () => {
+  let gameResourceIndex: IGameResourceIndex;
+
+  before(async () => {
+    gameResourceIndex = await getGameResourceIndex(BUFFER);
+  });
+
+  it('has some known resources properly indexed', () => {
+    console.log(gameResourceIndex);
+  });
+});
