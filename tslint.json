@@ -5,6 +5,8 @@
         "tslint-config-prettier"
     ],
     "jsRules": {},
-    "rules": {},
+    "rules": {
+      "interface-over-type-literal": false
+    },
     "rulesDirectory": []
 }

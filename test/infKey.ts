@@ -5,7 +5,9 @@ import 'mocha';
 import { join } from 'path';
 import {
   CHITIN_DOT_KEY_FILENAME,
+  findBifEntry,
   getGameResourceIndex,
+  IBifEntry,
   IGameResourceIndex,
   IResourceInfo,
   ResourceTypeID
@@ -19,7 +21,6 @@ const TEST_CHITIN_DOT_KEY_FILE: string = join(MOCK_INSTALL, CHITIN_DOT_KEY_FILEN
 const BUFFER = readFileSync(TEST_CHITIN_DOT_KEY_FILE);
 
 describe('infKey.ts', () => {
-
   describe('Testing basic parsing of chitin.key file', () => {
     it('fails when given a file with a very short header (parsing will fail)', (done) => {
       const bogusBuffer = Buffer.from('Bogus Buffer');
@@ -32,7 +33,7 @@ describe('infKey.ts', () => {
           done();
         });
     });
-  
+
     it('fails when given a file is big enough but unrecognizable', (done) => {
       const bogusBuffer = Buffer.alloc(1000, 1);
       getGameResourceIndex(bogusBuffer)
@@ -44,7 +45,7 @@ describe('infKey.ts', () => {
           done();
         });
     });
-  
+
     it('file header is properly read', function(done) {
       this.slow(8000); // Threshold for the test to be considered "slow"
       this.timeout(10000); // Reading the whole file takes a while, we need more timeout than the default.
@@ -55,14 +56,14 @@ describe('infKey.ts', () => {
       });
     });
   });
-  
+
   describe('Getting values from the index', () => {
     let gameResourceIndex: IGameResourceIndex;
-  
+
     before(async () => {
       gameResourceIndex = await getGameResourceIndex(BUFFER);
     });
-  
+
     it('got the expected number of resources', () => {
       // These values were extracted from Near Infinity using BaldursGate2:EE (no mods) data files.
       expect(gameResourceIndex.resources[ResourceTypeID.ITM].length).to.be.equal(2867);
@@ -74,7 +75,7 @@ describe('infKey.ts', () => {
       expect(gameResourceIndex.resources[ResourceTypeID.TWO_DA].length).to.be.equal(611);
       expect(gameResourceIndex.resources[ResourceTypeID.BS]).to.be.undefined; // tslint:disable-line:no-unused-expression
     });
-  
+
     it('got the expected resources', () => {
       // These values were extracted from Near Infinity using BaldursGate2:EE (no mods) data files.
       const resources: IResourceInfo[] = gameResourceIndex.resources[ResourceTypeID.IDS];
@@ -84,5 +85,22 @@ describe('infKey.ts', () => {
       expect(resources[resources.length - 1].name).to.be.equal('xequip');
     });
 
+    describe('Testing #findBifEntry', () => {
+      it('it should find BIF file information based on its name', () => {
+        const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'items');
+        expect(itemsEntry.fileName).to.be.equal('data/Items.bif');
+      });
+
+      it('it should throw if nothing is found', () => {
+        expect(() => {
+          const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'hello');
+        }).to.throw(/not found/);
+      });
+
+      it('is not affected by upper or lower case', () => {
+        const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'iTeMs');
+        expect(itemsEntry.fileName).to.be.equal('data/Items.bif');
+      });
+    });
   });
 });

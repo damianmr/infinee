@@ -15,7 +15,7 @@ export const enum ResourceTypeID {
   CRE = 0x03f1, // 1009
   TWO_DA = 0x03f4, // 1012
   BS = 0x03f9 // 1017
-};
+}
 
 const IndexableResourceTypes = [
   ResourceTypeID.ITM,
@@ -39,12 +39,13 @@ interface IKeyHeader {
   resourceOffset: number;
 }
 
-interface IBifEntry {
+export interface IBifEntry {
   fileLength: number;
   fileNameOffset: number;
   fileNameLength: number; // includes NULL (?)
   fileLocation: number;
   fileName: string;
+  rawFileName: string; // name as read from disk (with NULL terminator)
 }
 
 // An entry in the file that helps rebuild the index of resources.
@@ -64,7 +65,9 @@ export interface IResourceInfo {
   flags: number;
 }
 
-interface IResourcesByType { [index: number]: IResourceInfo[] };
+interface IResourcesByType {
+  [index: number]: IResourceInfo[];
+}
 
 export interface IGameResourceIndex {
   header: IKeyHeader;
@@ -97,7 +100,8 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
       fileNameOffset: r.readUInt32LE(),
       fileNameLength: r.readUInt16LE(), // tslint:disable-line:no-console object-literal-sort-keys
       fileLocation: r.readInt16LE(),
-      fileName: '' // will be populated later
+      fileName: '', // will be populated later
+      rawFileName: '' // will be populated later
     });
   }
 
@@ -107,7 +111,8 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
     // if (fileName[0] === ':') {
     //   console.warn('starting with ":"');
     // }
-    bifResources[i].fileName = fileName;
+    bifResources[i].fileName = unpad(fileName);
+    bifResources[i].rawFileName = fileName;
   }
 
   r.readOffset = header.resourceOffset;
@@ -149,6 +154,23 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
     header,
     resources: resourcesByType
   };
+}
+
+export function findBifEntry(gameResourceIndex: IGameResourceIndex, bifFileName: string): IBifEntry {
+  const foundEntry: IBifEntry | undefined = gameResourceIndex.bifResources.find((entry: IBifEntry) => {
+    return (
+      entry.fileName
+        .toLowerCase()
+        .replace('data/', '')
+        .replace('.bif', '') === bifFileName.toLowerCase()
+    );
+  });
+
+  if (!foundEntry) {
+    throw new Error(`Entry for BIF file "${bifFileName}.bif" (and variations) not found.`);
+  }
+
+  return foundEntry;
 }
 
 export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<IGameResourceIndex> {
