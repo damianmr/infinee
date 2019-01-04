@@ -28,6 +28,7 @@ interface IDialogsTable {
 interface IEmptyDialogsTable extends IDialogsTable {
   dialogs: IDialogEntry[];
 }
+
 export interface IPopulatedDialogsTable extends IDialogsTable {
   dialogs: IPopulatedDialogEntry[];
 }

@@ -8,7 +8,7 @@ import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
 
-const TEST_DIALOG_DOT_TLK_FILE_PATH: string = join(MOCK_INSTALL, 'en_US', DIALOG_DOT_TLK_FILENAME);
+const TEST_DIALOG_DOT_TLK_FILE_PATH: string = join(MOCK_INSTALL, 'lang', 'en_US', DIALOG_DOT_TLK_FILENAME);
 
 const KNOWN_STRINGS = [
   { index: 0, value: '<NO TEXT>' },
@@ -24,7 +24,7 @@ const KNOWN_STRINGS = [
 
 const BUFFER = readFileSync(TEST_DIALOG_DOT_TLK_FILE_PATH);
 
-describe('Testing the basic parsing of dialog.tlk file', () => {
+describe('Testing basic parsing of dialog.tlk file', () => {
   it('fails when given a file with a very short header (parsing will fail)', (done) => {
     const bogusBuffer = Buffer.from('Bogus Buffer');
     getDialogsTable(bogusBuffer)
@@ -49,14 +49,16 @@ describe('Testing the basic parsing of dialog.tlk file', () => {
       });
   });
 
-  it('file header is properly read', () => {
+  it('file header is properly read', function() {
+    this.slow(1000);
     return getDialogsTable(BUFFER).then((dialogsIndex: IPopulatedDialogsTable) => {
       expect(dialogsIndex.signature).to.be.equal('TLK ');
       expect(dialogsIndex.version).to.be.equal('V1  ');
     });
   });
 
-  it("should've read the strings table properly (testing against a few known values)", async () => {
+  it("should've read the strings table properly (testing against a few known values)", async function () {
+    this.slow(1000);
     return getDialogsTable(BUFFER).then((dialogsIndex: IPopulatedDialogsTable) => {
       KNOWN_STRINGS.forEach(({ index, value }: { index: number; value: string }) => {
         expect(dialogsIndex.dialogs[index].text).to.be.equal(value);
