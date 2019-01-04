@@ -4,12 +4,12 @@ import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
 import {
+  BifEntry,
   CHITIN_DOT_KEY_FILENAME,
   findBifEntry,
+  GameResourceIndex,
   getGameResourceIndex,
-  IBifEntry,
-  IGameResourceIndex,
-  IResourceInfo,
+  ResourceInfo,
   ResourceTypeID
 } from '../src/infKey';
 import { MOCK_INSTALL } from './constants';
@@ -49,7 +49,7 @@ describe('infKey.ts', () => {
     it('file header is properly read', function(done) {
       this.slow(8000); // Threshold for the test to be considered "slow"
       this.timeout(10000); // Reading the whole file takes a while, we need more timeout than the default.
-      getGameResourceIndex(BUFFER).then((gameResourceIndex: IGameResourceIndex) => {
+      getGameResourceIndex(BUFFER).then((gameResourceIndex: GameResourceIndex) => {
         expect(gameResourceIndex.header.signature).to.be.equal('KEY ');
         expect(gameResourceIndex.header.version).to.be.equal('V1  ');
         done();
@@ -58,7 +58,7 @@ describe('infKey.ts', () => {
   });
 
   describe('Getting values from the index', () => {
-    let gameResourceIndex: IGameResourceIndex;
+    let gameResourceIndex: GameResourceIndex;
 
     before(async () => {
       gameResourceIndex = await getGameResourceIndex(BUFFER);
@@ -78,7 +78,7 @@ describe('infKey.ts', () => {
 
     it('got the expected resources', () => {
       // These values were extracted from Near Infinity using BaldursGate2:EE (no mods) data files.
-      const resources: IResourceInfo[] = gameResourceIndex.resources[ResourceTypeID.IDS];
+      const resources: ResourceInfo[] = gameResourceIndex.resources[ResourceTypeID.IDS];
       expect(resources[0].name).to.be.equal('ACTION');
       expect(resources[1].name).to.be.equal('ACTSLEEP');
       expect(resources[2].name).to.be.equal('ALIGN');
@@ -87,18 +87,18 @@ describe('infKey.ts', () => {
 
     describe('Testing #findBifEntry', () => {
       it('it should find BIF file information based on its name', () => {
-        const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'items');
+        const itemsEntry: BifEntry = findBifEntry(gameResourceIndex, 'items');
         expect(itemsEntry.fileName).to.be.equal('data/Items.bif');
       });
 
       it('it should throw if nothing is found', () => {
         expect(() => {
-          const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'hello');
+          const itemsEntry: BifEntry = findBifEntry(gameResourceIndex, 'hello');
         }).to.throw(/not found/);
       });
 
       it('is not affected by upper or lower case', () => {
-        const itemsEntry: IBifEntry = findBifEntry(gameResourceIndex, 'iTeMs');
+        const itemsEntry: BifEntry = findBifEntry(gameResourceIndex, 'iTeMs');
         expect(itemsEntry.fileName).to.be.equal('data/Items.bif');
       });
     });

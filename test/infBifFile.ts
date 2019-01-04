@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
 import { BifIndex, getFilesIndex } from '../src/infBifFile';
-import { CHITIN_DOT_KEY_FILENAME, getGameResourceIndex, IGameResourceIndex, findBifEntry } from '../src/infKey';
+import { CHITIN_DOT_KEY_FILENAME, findBifEntry, GameResourceIndex, getGameResourceIndex } from '../src/infKey';
 import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
@@ -14,7 +14,7 @@ const TEST_CHITIN_DOT_KEY_FILE: string = join(MOCK_INSTALL, CHITIN_DOT_KEY_FILEN
 const BUFFER = readFileSync(TEST_CHITIN_DOT_KEY_FILE);
 
 describe('infBifFile.ts', () => {
-  let gameResourceIndex: IGameResourceIndex;
+  let gameResourceIndex: GameResourceIndex;
 
   before(async () => {
     gameResourceIndex = await getGameResourceIndex(BUFFER);
@@ -59,11 +59,10 @@ describe('infBifFile.ts', () => {
     });
 
     it('test 1', () => {
-      console.log('AAAAAA');
-      console.log(bifIndex);
+      // console.log('AAAAAA');
+      // console.log(bifIndex);
     });
 
     it('test 2');
-
   });
 });

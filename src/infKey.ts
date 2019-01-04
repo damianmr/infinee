@@ -30,7 +30,7 @@ const IndexableResourceTypes = [
 
 const FILE_SIGNATURE = 'KEY ';
 
-interface IKeyHeader {
+type KeyHeader = {
   signature: string;
   version: string;
   bifCount: number;
@@ -39,7 +39,7 @@ interface IKeyHeader {
   resourceOffset: number;
 }
 
-export interface IBifEntry {
+export type BifEntry = {
   fileLength: number;
   fileNameOffset: number;
   fileNameLength: number; // includes NULL (?)
@@ -49,13 +49,13 @@ export interface IBifEntry {
 }
 
 // An entry in the file that helps rebuild the index of resources.
-interface IResourceLocatorEntry {
+type ResourceLocatorEntry = {
   name: string;
   type: ResourceTypeID;
   locator: number;
 }
 
-export interface IResourceInfo {
+export type ResourceInfo = {
   rawName: string; // Name as read from the file, with NULL characters at the end ("MY_FILE\u0000")
   name: string; // Name as JavaScript sees it (no NULL chars, "MY_FILE\u0000" becomes "MY_FILE")
   bifKeyIndex: number;
@@ -65,20 +65,20 @@ export interface IResourceInfo {
   flags: number;
 }
 
-interface IResourcesByType {
-  [index: number]: IResourceInfo[];
+type ResourcesByType = {
+  [index: number]: ResourceInfo[];
 }
 
-export interface IGameResourceIndex {
-  header: IKeyHeader;
-  bifResources: IBifEntry[];
-  resources: IResourcesByType;
+export type GameResourceIndex = {
+  header: KeyHeader;
+  bifResources: BifEntry[];
+  resources: ResourcesByType;
 }
 
-function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
+function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
   const r = SmartBuffer.fromBuffer(fileBuffer);
 
-  const header: IKeyHeader = {
+  const header: KeyHeader = {
     signature: r.readString(4),
     version: r.readString(4),
     bifCount: r.readUInt32LE(), // tslint:disable-line:no-console object-literal-sort-keys
@@ -93,7 +93,7 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
 
   r.readOffset = header.bifOffset;
 
-  const bifResources: IBifEntry[] = [];
+  const bifResources: BifEntry[] = [];
   for (let i = 0; i < header.bifCount; i++) {
     bifResources.push({
       fileLength: r.readUInt32LE(),
@@ -117,7 +117,7 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
 
   r.readOffset = header.resourceOffset;
 
-  const resources: IResourceLocatorEntry[] = [];
+  const resources: ResourceLocatorEntry[] = [];
   for (let i = 0; i < header.resourceCount; i++) {
     resources.push({
       name: r.readString(8),
@@ -129,11 +129,11 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
   // TODO Copying this logic from EEKeeper, but I think is worth checking if a map
   // with <resourceType_resourceName> as key would be more efficient in JavaScript.
   // I'll find out once I start working in the UI logic.
-  const resourcesByType: IResourcesByType = {};
+  const resourcesByType: ResourcesByType = {};
   for (let i = 0; i < header.resourceCount; i++) {
     if (IndexableResourceTypes.indexOf(resources[i].type) !== -1) {
       const resourceEntry = resources[i];
-      const sameTypeResources: IResourceInfo[] = resourcesByType[resourceEntry.type] || [];
+      const sameTypeResources: ResourceInfo[] = resourcesByType[resourceEntry.type] || [];
       sameTypeResources.push({
         name: unpad(resourceEntry.name),
         rawName: resourceEntry.name,
@@ -156,8 +156,8 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
   };
 }
 
-export function findBifEntry(gameResourceIndex: IGameResourceIndex, bifFileName: string): IBifEntry {
-  const foundEntry: IBifEntry | undefined = gameResourceIndex.bifResources.find((entry: IBifEntry) => {
+export function findBifEntry(gameResourceIndex: GameResourceIndex, bifFileName: string): BifEntry {
+  const foundEntry: BifEntry | undefined = gameResourceIndex.bifResources.find((entry: BifEntry) => {
     return (
       entry.fileName
         .toLowerCase()
@@ -173,10 +173,10 @@ export function findBifEntry(gameResourceIndex: IGameResourceIndex, bifFileName:
   return foundEntry;
 }
 
-export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<IGameResourceIndex> {
+export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<GameResourceIndex> {
   return new Promise((resolve, reject) => {
     try {
-      const gameResourceIndex: IGameResourceIndex = buildGameIndex(chitinDotKeyFile);
+      const gameResourceIndex: GameResourceIndex = buildGameIndex(chitinDotKeyFile);
       resolve(gameResourceIndex);
     } catch (e) {
       reject(e);
