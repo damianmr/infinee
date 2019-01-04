@@ -155,6 +155,8 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
     }
   }
 
+  // TODO Here there _should_ be a call to RefreshOverride() (original EEKeeper)
+
   return {
     bifResources,
     header,

@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { CHITIN_DOT_KEY_FILENAME, getGameResourceIndex, IGameResourceIndex } from '../src/infKey';
+import { CHITIN_DOT_KEY_FILENAME, getGameResourceIndex, IGameResourceIndex, ResourceType } from '../src/infKey';
 import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
@@ -57,6 +57,7 @@ describe('Getting values from the index', () => {
   });
 
   it('has some known resources properly indexed', () => {
-    console.log(gameResourceIndex);
+    const a = gameResourceIndex.resources[ResourceType.BMP];
+    expect(gameResourceIndex.resources[ResourceType.BMP])
   });
 });
