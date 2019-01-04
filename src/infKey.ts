@@ -1,4 +1,5 @@
 import { SmartBuffer } from 'smart-buffer';
+import { unpad } from './util/legacyFilenamePadding';
 
 export const CHITIN_DOT_KEY_FILENAME = 'chitin.key';
 
@@ -54,7 +55,8 @@ interface IResourceLocatorEntry {
 }
 
 export interface IResourceInfo {
-  name: string;
+  rawName: string; // Name as read from the file, with NULL characters at the end ("MY_FILE\u0000")
+  name: string; // Name as JavaScript sees it (no NULL chars, "MY_FILE\u0000" becomes "MY_FILE")
   bifKeyIndex: number;
   tileIndex: number;
   locator: number;
@@ -128,7 +130,8 @@ function buildGameIndex(fileBuffer: Buffer): IGameResourceIndex {
       const resourceEntry = resources[i];
       const sameTypeResources: IResourceInfo[] = resourcesByType[resourceEntry.type] || [];
       sameTypeResources.push({
-        name: resourceEntry.name,
+        name: unpad(resourceEntry.name),
+        rawName: resourceEntry.name,
         bifKeyIndex: (resourceEntry.locator & 0xfff00000) >> 20, // tslint:disable-line: object-literal-sort-keys no-bitwise
         locator: resourceEntry.locator & 0x00003fff, // tslint:disable-line: no-bitwise
         tileIndex: (resourceEntry.locator & 0x000fc000) >> 14, // tslint:disable-line: no-bitwise

@@ -1,7 +1,7 @@
 {
   "scripts": {
     "tslint-check": "tslint-config-prettier-check ./tslint.json",
-    "test": "mocha -r ts-node/register test/**/*.ts",
+    "test": "mocha -r ts-node/register test/**/**/*.ts",
     "dev": "parcel src/index.html",
     "build": "parcel build src/index.html"
   },
