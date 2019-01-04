@@ -13,7 +13,6 @@ const TEST_CHITIN_DOT_KEY_FILE: string = join(MOCK_INSTALL, CHITIN_DOT_KEY_FILEN
 const BUFFER = readFileSync(TEST_CHITIN_DOT_KEY_FILE);
 
 describe('Testing basic parsing of chitin.key file', () => {
-
   it('fails when given a file with a very short header (parsing will fail)', (done) => {
     const bogusBuffer = Buffer.from('Bogus Buffer');
     getGameResourceIndex(bogusBuffer)
@@ -38,7 +37,7 @@ describe('Testing basic parsing of chitin.key file', () => {
       });
   });
 
-  it('file header is properly read', function (done) {
+  it('file header is properly read', function(done) {
     this.slow(8000); // Threshold for the test to be considered "slow"
     this.timeout(10000); // Reading the whole file takes a while, we need more timeout than the default.
     getGameResourceIndex(BUFFER).then((gameResourceIndex: IGameResourceIndex) => {
@@ -56,7 +55,15 @@ describe('Getting values from the index', () => {
     gameResourceIndex = await getGameResourceIndex(BUFFER);
   });
 
-  it('has some known resources properly indexed', () => {
-    expect(gameResourceIndex.resources[ResourceTypeID.BMP])
+  it('got the expected number of resources', () => {
+    // These values were extracted from Near Infinity using BaldursGate2:EE (no mods) data files.
+    expect(gameResourceIndex.resources[ResourceTypeID.ITM].length).to.be.equal(2867);
+    expect(gameResourceIndex.resources[ResourceTypeID.BAM].length).to.be.equal(17136);
+    expect(gameResourceIndex.resources[ResourceTypeID.BMP].length).to.be.equal(2660);
+    expect(gameResourceIndex.resources[ResourceTypeID.SPL].length).to.be.equal(1634);
+    expect(gameResourceIndex.resources[ResourceTypeID.CRE].length).to.be.equal(4735);
+    expect(gameResourceIndex.resources[ResourceTypeID.IDS].length).to.be.equal(72);
+    expect(gameResourceIndex.resources[ResourceTypeID.TWO_DA].length).to.be.equal(611);
+    expect(gameResourceIndex.resources[ResourceTypeID.BS]).to.be.undefined; // tslint:disable-line:no-unused-expression
   });
 });
