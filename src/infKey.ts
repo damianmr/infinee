@@ -53,7 +53,7 @@ interface IResourceLocatorEntry {
   locator: number;
 }
 
-interface IResourceInfo {
+export interface IResourceInfo {
   name: string;
   bifKeyIndex: number;
   tileIndex: number;

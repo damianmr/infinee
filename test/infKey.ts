@@ -3,7 +3,13 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { CHITIN_DOT_KEY_FILENAME, getGameResourceIndex, IGameResourceIndex, ResourceTypeID } from '../src/infKey';
+import {
+  CHITIN_DOT_KEY_FILENAME,
+  getGameResourceIndex,
+  IGameResourceIndex,
+  IResourceInfo,
+  ResourceTypeID
+} from '../src/infKey';
 import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
@@ -65,5 +71,14 @@ describe('Getting values from the index', () => {
     expect(gameResourceIndex.resources[ResourceTypeID.IDS].length).to.be.equal(72);
     expect(gameResourceIndex.resources[ResourceTypeID.TWO_DA].length).to.be.equal(611);
     expect(gameResourceIndex.resources[ResourceTypeID.BS]).to.be.undefined; // tslint:disable-line:no-unused-expression
+  });
+
+  it('got the expected resources', () => {
+    // These values were extracted from Near Infinity using BaldursGate2:EE (no mods) data files.
+    const resources: IResourceInfo[] = gameResourceIndex.resources[ResourceTypeID.IDS];
+    expect(resources[0].name).to.be.equal('ACTION');
+    // expect(resources[1].name).to.be.equal('ACTSLEEP');
+    // expect(resources[2].name).to.be.equal('ALIGN');
+    expect(resources[resources.length - 1].name).to.be.equal('xequip');
   });
 });
