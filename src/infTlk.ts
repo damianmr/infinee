@@ -4,36 +4,36 @@ export const DIALOG_DOT_TLK_FILENAME = 'dialog.tlk';
 
 const FILE_SIGNATURE = 'TLK ';
 
-interface IDialogEntry {
+type DialogEntry = {
   unknown: number;
   soundName: string;
   volumeVariance: number;
   pitchVariance: number;
   relativeOffset: number;
   length: number;
-}
+};
 
-interface IPopulatedDialogEntry extends IDialogEntry {
+type PopulatedDialogEntry = DialogEntry & {
   text: string;
-}
+};
 
-interface IDialogsTable {
+type DialogsTable = {
   signature: string;
   version: string;
   unknown: string;
   stringsCount: number;
   stringsOffset: number;
-}
+};
 
-interface IEmptyDialogsTable extends IDialogsTable {
-  dialogs: IDialogEntry[];
-}
+type EmptyDialogsTable = DialogsTable & {
+  dialogs: DialogEntry[];
+};
 
-export interface IPopulatedDialogsTable extends IDialogsTable {
-  dialogs: IPopulatedDialogEntry[];
-}
+export type PopulatedDialogsTable = DialogsTable & {
+  dialogs: PopulatedDialogEntry[];
+};
 
-function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
+function buildDialogsTable(fileBuffer: Buffer): EmptyDialogsTable {
   const r = SmartBuffer.fromBuffer(fileBuffer);
 
   const fileHeader = {
@@ -67,9 +67,9 @@ function buildDialogsTable(fileBuffer: Buffer): IEmptyDialogsTable {
   return Object.assign({}, fileHeader, { dialogs });
 }
 
-function populateDialogsTable(dialogsFileContents: Buffer, dI: IEmptyDialogsTable): IPopulatedDialogsTable {
+function populateDialogsTable(dialogsFileContents: Buffer, dI: EmptyDialogsTable): PopulatedDialogsTable {
   const r = SmartBuffer.fromBuffer(dialogsFileContents);
-  const dialogs: IPopulatedDialogEntry[] = [];
+  const dialogs: PopulatedDialogEntry[] = [];
   for (let i = 0; i < dI.stringsCount; i++) {
     r.readOffset = dI.stringsOffset + dI.dialogs[i].relativeOffset;
     dialogs[i] = Object.assign({}, dI.dialogs[i], {
@@ -80,18 +80,21 @@ function populateDialogsTable(dialogsFileContents: Buffer, dI: IEmptyDialogsTabl
   return Object.assign({}, dI, { dialogs });
 }
 
-export function getDialogsTable(dialogsFileBuffer: Buffer): Promise<IPopulatedDialogsTable> {
+export function getDialogsTable(dialogsFileBuffer: Buffer): Promise<PopulatedDialogsTable> {
   return new Promise((resolve, reject) => {
     try {
-      const index: IPopulatedDialogsTable = populateDialogsTable(dialogsFileBuffer, buildDialogsTable(dialogsFileBuffer));
+      const index: PopulatedDialogsTable = populateDialogsTable(
+        dialogsFileBuffer,
+        buildDialogsTable(dialogsFileBuffer)
+      );
       resolve(index);
-    } catch(e) {
+    } catch (e) {
       reject(e);
     }
   });
 }
 
-export function getText(dialogsIndex: IPopulatedDialogsTable, index: number) {
+export function getText(dialogsIndex: PopulatedDialogsTable, index: number) {
   if (index > dialogsIndex.dialogs.length || index < 0) {
     throw new Error('Cannot retrieve text. Index out of bounds.');
   }

@@ -59,8 +59,7 @@ describe('infBifFile.ts', () => {
     });
 
     it('test 1', () => {
-      // console.log('AAAAAA');
-      // console.log(bifIndex);
+      console.log(bifIndex);
     });
 
     it('test 2');

@@ -23,7 +23,7 @@ type BifHeader = {
   // Tileset entries will follow the file entries.
 }
 
-type FileEntry = {
+type EntityFileEntry = {
   locator: number; // uint32
   offset: number; // uint32
   size: number; // uint32
@@ -31,11 +31,11 @@ type FileEntry = {
   unknown: string; // char[2]
 }
 
-type EntriesIndex = { [id: string]: FileEntry } // ID will be <resourceType_locator>
+type EntriesIndex = { [id: string]: EntityFileEntry } // ID will be <resourceType_locator>
 
 export type BifIndex = {
   header: BifHeader;
-  entries: EntriesIndex;
+  entities: EntriesIndex;
 }
 
 function buildFileIndex(biffBuffer: Buffer): BifIndex {
@@ -58,20 +58,20 @@ function buildFileIndex(biffBuffer: Buffer): BifIndex {
 
   r.readOffset = header.fileEntryOffset;
 
-  const entries: EntriesIndex = {};
+  const entities: EntriesIndex = {};
   for (let i = 0; i < header.fileEntryCount; i++) {
-    const fileEntry: FileEntry = {
+    const fileEntry: EntityFileEntry = {
       locator: r.readUInt32LE(),
       offset: r.readUInt32LE(),
       size: r.readUInt32LE(),
       type: r.readUInt16LE(),
       unknown: r.readString(2)
     }
-    entries[`${fileEntry.type}_${fileEntry.locator}`] = fileEntry;
+    entities[`${fileEntry.type}_${fileEntry.locator}`] = fileEntry;
   }
 
   return {
-    entries,
+    entities,
     header
   };
 }
@@ -86,3 +86,5 @@ export function getFilesIndex(biffBuffer: Buffer): Promise<BifIndex> {
     }
   });
 }
+
+// export function getEntityData
