@@ -1,6 +1,5 @@
 import { SmartBuffer } from 'smart-buffer';
 import { unpad } from './util/legacyFilenamePadding';
-
 export const CHITIN_DOT_KEY_FILENAME = 'chitin.key';
 
 export const enum ResourceTypeID {
@@ -19,10 +18,10 @@ export const enum ResourceTypeID {
 
 const IndexableResourceTypes = [
   ResourceTypeID.ITM,
-  ResourceTypeID.BAM,
-  ResourceTypeID.BMP,
   ResourceTypeID.SPL,
   ResourceTypeID.CRE,
+  ResourceTypeID.BAM,
+  ResourceTypeID.BMP,
   ResourceTypeID.IDS,
   ResourceTypeID.TWO_DA,
   ResourceTypeID.BS
@@ -37,7 +36,7 @@ type KeyHeader = {
   resourceCount: number;
   bifOffset: number;
   resourceOffset: number;
-}
+};
 
 export type BifEntry = {
   fileLength: number;
@@ -46,14 +45,14 @@ export type BifEntry = {
   fileLocation: number;
   fileName: string;
   rawFileName: string; // name as read from disk (with NULL terminator)
-}
+};
 
 // An entry in the file that helps rebuild the index of resources.
 type ResourceLocatorEntry = {
   name: string;
   type: ResourceTypeID;
   locator: number;
-}
+};
 
 export type ResourceInfo = {
   rawName: string; // Name as read from the file, with NULL characters at the end ("MY_FILE\u0000")
@@ -63,16 +62,31 @@ export type ResourceInfo = {
   locator: number;
   resourceType: ResourceTypeID;
   flags: number;
-}
+};
 
 type ResourcesByType = {
   [index: number]: ResourceInfo[];
-}
+};
+
+type ResourceMap = {
+  [index: string]: ResourceInfo;
+};
 
 export type GameResourceIndex = {
   header: KeyHeader;
   bifResources: BifEntry[];
-  resources: ResourcesByType;
+  resources: ResourcesByType /** @deprecated */;
+  resources_: ResourceMap;
+};
+
+function resourceInfoKey(a: string | ResourceInfo, b?: ResourceTypeID): any {
+  if (typeof a === 'string' && typeof b === 'number') {
+    return `${a}_${b}`.toLowerCase();
+  } else if (typeof a !== 'string' && a.name && a.resourceType) {
+    return `${a.name}_${a.resourceType}`.toLowerCase();
+  } else {
+    throw new Error(`Invalid arguments for resourceInfoKey. 1st arg: "${a}", 2nd arg: "${b}"`);
+  }
 }
 
 function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
@@ -88,7 +102,11 @@ function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
   };
 
   if (header.signature.indexOf(FILE_SIGNATURE) !== 0) {
-    throw new Error(`Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${header.signature}" instead.`);
+    throw new Error(
+      `Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${
+        header.signature
+      }" instead.`
+    );
   }
 
   r.readOffset = header.bifOffset;
@@ -130,41 +148,48 @@ function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
   // with <resourceType_resourceName> as key would be more efficient in JavaScript.
   // I'll find out once I start working in the UI logic.
   const resourcesByType: ResourcesByType = {};
+
+  const resourcesByNameType: ResourceMap = {};
+
   for (let i = 0; i < header.resourceCount; i++) {
-    if (IndexableResourceTypes.indexOf(resources[i].type) !== -1) {
-      const resourceEntry = resources[i];
-      const sameTypeResources: ResourceInfo[] = resourcesByType[resourceEntry.type] || [];
-      sameTypeResources.push({
-        name: unpad(resourceEntry.name),
-        rawName: resourceEntry.name,
-        bifKeyIndex: (resourceEntry.locator & 0xfff00000) >> 20, // tslint:disable-line: object-literal-sort-keys no-bitwise
-        locator: resourceEntry.locator & 0x00003fff, // tslint:disable-line: no-bitwise
-        tileIndex: (resourceEntry.locator & 0x000fc000) >> 14, // tslint:disable-line: no-bitwise
-        resourceType: resourceEntry.type,
+    const isIndexableType = IndexableResourceTypes.indexOf(resources[i].type) !== -1;
+    if (isIndexableType) {
+      const resourceLocator: ResourceLocatorEntry = resources[i];
+      const sameTypeResources: ResourceInfo[] = resourcesByType[resourceLocator.type] || [];
+      const resourceInfo: ResourceInfo = {
+        name: unpad(resourceLocator.name),
+        rawName: resourceLocator.name,
+        bifKeyIndex: (resourceLocator.locator & 0xfff00000) >> 20, // tslint:disable-line: object-literal-sort-keys no-bitwise
+        locator: resourceLocator.locator & 0x00003fff, // tslint:disable-line: no-bitwise
+        tileIndex: (resourceLocator.locator & 0x000fc000) >> 14, // tslint:disable-line: no-bitwise
+        resourceType: resourceLocator.type,
         flags: 0
-      });
-      resourcesByType[resourceEntry.type] = sameTypeResources;
+      };
+      resourcesByNameType[resourceInfoKey(resourceInfo)] = resourceInfo;
+      sameTypeResources.push(resourceInfo);
+      resourcesByType[resourceLocator.type] = sameTypeResources;
     }
   }
-
-  // TODO Here there _should_ be a call to RefreshOverride() (original EEKeeper)
 
   return {
     bifResources,
     header,
-    resources: resourcesByType
+    resources: resourcesByType,
+    resources_: resourcesByNameType
   };
 }
 
 export function findBifEntry(gameResourceIndex: GameResourceIndex, bifFileName: string): BifEntry {
-  const foundEntry: BifEntry | undefined = gameResourceIndex.bifResources.find((entry: BifEntry) => {
-    return (
-      entry.fileName
-        .toLowerCase()
-        .replace('data/', '')
-        .replace('.bif', '') === bifFileName.toLowerCase()
-    );
-  });
+  const foundEntry: BifEntry | undefined = gameResourceIndex.bifResources.find(
+    (entry: BifEntry) => {
+      return (
+        entry.fileName
+          .toLowerCase()
+          .replace('data/', '')
+          .replace('.bif', '') === bifFileName.toLowerCase()
+      );
+    }
+  );
 
   if (!foundEntry) {
     throw new Error(`Entry for BIF file "${bifFileName}.bif" (and variations) not found.`);
@@ -182,4 +207,18 @@ export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<GameReso
       reject(e);
     }
   });
+}
+
+export function findResourceInfo(
+  gameIndex: GameResourceIndex,
+  resourceName: string,
+  resourceType: ResourceTypeID
+): ResourceInfo {
+  const info: ResourceInfo = gameIndex.resources_[resourceInfoKey(resourceName, resourceType)];
+  if (!info) {
+    throw new Error(
+      `Resource info entry not found for resourceName: "${resourceName}" and type: "${resourceType}"`
+    );
+  }
+  return info;
 }

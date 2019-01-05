@@ -7,6 +7,7 @@ import {
   BifEntry,
   CHITIN_DOT_KEY_FILENAME,
   findBifEntry,
+  findResourceInfo,
   GameResourceIndex,
   getGameResourceIndex,
   ResourceInfo,
@@ -83,6 +84,54 @@ describe('infKey.ts', () => {
       expect(resources[1].name).to.be.equal('ACTSLEEP');
       expect(resources[2].name).to.be.equal('ALIGN');
       expect(resources[resources.length - 1].name).to.be.equal('xequip');
+    });
+
+    it('indexes in resources correctly point to their BIF files (testing against some known values)', () => {
+      const knownResources = [
+        { name: 'AMUL01', file: 'data/Items.bif' },
+        { name: 'DRAGBLUE', file: 'data/25Items.bif' },
+        { name: '1amul07B', file: 'data/GUIIcon.bif' },
+        { name: 'DIFFLEV', file: 'data/Default.bif' }
+      ];
+      const item1 = gameResourceIndex.resources[ResourceTypeID.IDS].find((value: ResourceInfo) => {
+        return value.name === knownResources[3].name;
+      });
+      // console.log(gameResourceIndex.resources[ResourceTypeID.IDS]);
+      // tslint:disable-next-line:no-unused-expression
+      expect(item1).to.not.be.undefined;
+      if (!item1) {
+        throw new Error();
+      }
+      const bif: BifEntry = gameResourceIndex.bifResources[item1.bifKeyIndex];
+      expect(bif.fileName).to.be.equal(knownResources[3].file);
+    });
+
+    describe('Testing #findResourceInfo', () => {
+      it('should find a ResourceInfo using its name and type', () => {
+        const resInfo: ResourceInfo = findResourceInfo(
+          gameResourceIndex,
+          'AMUL01',
+          ResourceTypeID.ITM
+        );
+        expect(resInfo.name).to.be.equal('AMUL01');
+        expect(resInfo.resourceType).to.be.equal(ResourceTypeID.ITM);
+      });
+
+      it('should throw if nothing is found', () => {
+        expect(() => {
+          findResourceInfo(gameResourceIndex, 'Hello', ResourceTypeID.ITM);
+        }).to.throw(/not found/);
+      });
+
+      it('case does not affect the search', () => {
+        const resInfo: ResourceInfo = findResourceInfo(
+          gameResourceIndex,
+          'aMuL01',
+          ResourceTypeID.ITM
+        );
+        expect(resInfo.name).to.be.equal('AMUL01');
+        expect(resInfo.resourceType).to.be.equal(ResourceTypeID.ITM);
+      });
     });
 
     describe('Testing #findBifEntry', () => {
