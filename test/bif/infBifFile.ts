@@ -3,8 +3,18 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { BifIndex, getFilesIndex } from '../../src/bif/infBifFile';
-import { CHITIN_DOT_KEY_FILENAME, findBifEntry, GameResourceIndex, getGameResourceIndex } from '../../src/infKey';
+import { BifIndex, getEntityEntry, getFilesIndex, getItem, getSpell } from '../../src/bif/infBifFile';
+import { ItemDefinition } from '../../src/bif/item';
+import { SpellDefinition } from '../../src/bif/spell';
+import {
+  CHITIN_DOT_KEY_FILENAME,
+  findBifEntry,
+  findResourceInfo,
+  GameResourceIndex,
+  getGameResourceIndex,
+  ResourceTypeID
+} from '../../src/infKey';
+import { unpad } from '../../src/util/legacyFilenamePadding';
 import { MOCK_INSTALL } from '../constants';
 
 chai.use(chaiAsPromised);
@@ -48,18 +58,45 @@ describe('infBifFile.ts', () => {
     it('fails on given an unrecognized version (just "V1  " supported)');
   });
 
-  describe('Parsing of some known files', () => {
-    let bifIndex: BifIndex;
+  describe('Parsing of a bif file', () => {
+    let itemsIndex: BifIndex;
+    let spellsIndex: BifIndex;
 
     before(async () => {
-      const knownBif = findBifEntry(gameResourceIndex, 'items');
-      const knownBifPath = join(MOCK_INSTALL, knownBif.fileName);
-      const bifBuffer = await readFileSync(knownBifPath);
-      bifIndex = await getFilesIndex(bifBuffer, 'items');
+      const testItemsBif = findBifEntry(gameResourceIndex, 'items');
+      const itemsBifBuffer = await readFileSync(join(MOCK_INSTALL, testItemsBif.fileName));
+      itemsIndex = await getFilesIndex(itemsBifBuffer, 'items');
+
+      const testSpellsBif = findBifEntry(gameResourceIndex, 'spells');
+      const spellsBifBuffer = await readFileSync(join(MOCK_INSTALL, testSpellsBif.fileName));
+      spellsIndex = await getFilesIndex(spellsBifBuffer, 'spells');
     });
 
-    it('parsing some known items');
+    it('parsing a known item', async () => {
+      const resourceInfo = findResourceInfo(gameResourceIndex, 'AROW10', ResourceTypeID.ITM);
+      const bifEntityEntry = getEntityEntry({
+        index: itemsIndex,
+        locator: resourceInfo.locator,
+        resourceType: ResourceTypeID.ITM
+      });
+      const item: ItemDefinition = await getItem(itemsIndex, bifEntityEntry.locator);
+      expect(item.genericItemName).to.be.equal(6328);
+      expect(item.lore).to.be.equal(30);
+      expect(unpad(item.itemIcon)).to.be.equal('IAROW10');
+    });
 
-    it('test 2');
+    it('parsing a known spell', async () => {
+      const FREEDOM_SPELL = 'cdwi917a';
+      const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
+      const bifEntityEntry = getEntityEntry({
+        index: spellsIndex,
+        locator: resourceInfo.locator,
+        resourceType: ResourceTypeID.SPL
+      });
+      const spell: SpellDefinition = await getSpell(spellsIndex, bifEntityEntry.locator);
+      expect(spell.genericSpellName).to.be.equal(35553);
+      expect(unpad(spell.spellIcon)).to.be.equal('SPWI917C');
+    });
+
   });
 });
