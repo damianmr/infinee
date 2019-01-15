@@ -3,8 +3,16 @@ type DirectoryEntries = {
   directory: DirectoryEntry;
 };
 
-type FlatDirectoryStructure = {
+type FlatDirectoryStructureAsEntries = {
   [path: string]: FileEntry
+}
+
+type FlatDirectoryStructure = {
+  [path: string]: File
+}
+
+function asFile(fileEntry: FileEntry): Promise<File> {
+  return new Promise((resolve, reject) => fileEntry.file(resolve, reject));
 }
 
 export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEntries> {
@@ -25,13 +33,13 @@ export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEnt
   });
 }
 
-export function buildDirectoryStructure(mainDirectory: DirectoryEntry): Promise<FlatDirectoryStructure> {
-  const dirStructure: FlatDirectoryStructure = {};
+export function buildDirectoryStructure(mainDirectory: DirectoryEntry): Promise<FlatDirectoryStructureAsEntries> {
+  const dirStructure: FlatDirectoryStructureAsEntries = {};
 
   return new Promise((resolveEverything, rejectEverything) => {
 
-    const readDir = (dir: DirectoryEntry): Promise<FlatDirectoryStructure> => {
-      const subDirsPromises: Array<Promise<FlatDirectoryStructure>> = [];
+    const readDir = (dir: DirectoryEntry): Promise<FlatDirectoryStructureAsEntries> => {
+      const subDirsPromises: Array<Promise<FlatDirectoryStructureAsEntries>> = [];
 
       return new Promise((resolveDir) => {
         readDirContents(dir).then((dirEntries: DirectoryEntries) => {
@@ -49,4 +57,19 @@ export function buildDirectoryStructure(mainDirectory: DirectoryEntry): Promise<
 
     readDir(mainDirectory).then(resolveEverything);
   });
+}
+
+export function createFilePointers(dirStructure: FlatDirectoryStructureAsEntries): Promise<FlatDirectoryStructure> {
+  const struct: FlatDirectoryStructure = {};
+  return new Promise((resolveAll, rejectAll) => {
+    Promise.all(Object.keys(dirStructure).map((filePath: string) => {
+      return new Promise((resolve) => {
+        asFile(dirStructure[filePath]).then((file: File) => {
+          struct[filePath] = file;
+          resolve();
+        });
+      });
+    })).then(() => resolveAll(struct)).catch(rejectAll);
+  });
+
 }

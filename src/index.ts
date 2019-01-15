@@ -1,5 +1,5 @@
 import toBuffer from 'blob-to-buffer';
-import { buildDirectoryStructure } from './folder';
+import { buildDirectoryStructure, createFilePointers } from './folder';
 import { getDialogsTable, getText, PopulatedDialogsTable } from './infTlk';
 
 // tslint:disable:no-console
@@ -79,9 +79,9 @@ function handleDropsInFolderArea() {
     byId('dirContents').appendChild(listEl);
     processFolder(droppedItem as DirectoryEntry, listEl);
 
-    console.log('LA PRUEBA');
     const tree = await buildDirectoryStructure(droppedItem as DirectoryEntry);
-    console.log('TREE', tree);
+    const treeFiles = await createFilePointers(tree);
+    console.log('TREE Files', treeFiles);
   });
 
   let lastFile: FileEntry;
