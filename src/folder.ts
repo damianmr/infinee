@@ -4,12 +4,12 @@ type DirectoryEntries = {
 };
 
 type FlatDirectoryStructureAsEntries = {
-  [path: string]: FileEntry
-}
+  [path: string]: FileEntry;
+};
 
 type FlatDirectoryStructure = {
-  [path: string]: File
-}
+  [path: string]: File;
+};
 
 function asFile(fileEntry: FileEntry): Promise<File> {
   return new Promise((resolve, reject) => fileEntry.file(resolve, reject));
@@ -33,11 +33,12 @@ export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEnt
   });
 }
 
-export function buildDirectoryStructure(mainDirectory: DirectoryEntry): Promise<FlatDirectoryStructureAsEntries> {
+export function buildDirectoryStructure(
+  mainDirectory: DirectoryEntry
+): Promise<FlatDirectoryStructureAsEntries> {
   const dirStructure: FlatDirectoryStructureAsEntries = {};
 
   return new Promise((resolveEverything, rejectEverything) => {
-
     const readDir = (dir: DirectoryEntry): Promise<FlatDirectoryStructureAsEntries> => {
       const subDirsPromises: Array<Promise<FlatDirectoryStructureAsEntries>> = [];
 
@@ -53,23 +54,55 @@ export function buildDirectoryStructure(mainDirectory: DirectoryEntry): Promise<
           Promise.all(subDirsPromises).then(() => resolveDir(dirStructure));
         });
       });
-    }
+    };
 
     readDir(mainDirectory).then(resolveEverything);
   });
 }
 
-export function createFilePointers(dirStructure: FlatDirectoryStructureAsEntries): Promise<FlatDirectoryStructure> {
+export function createFilePointers(
+  dirStructure: FlatDirectoryStructureAsEntries
+): Promise<FlatDirectoryStructure> {
   const struct: FlatDirectoryStructure = {};
   return new Promise((resolveAll, rejectAll) => {
-    Promise.all(Object.keys(dirStructure).map((filePath: string) => {
-      return new Promise((resolve) => {
-        asFile(dirStructure[filePath]).then((file: File) => {
-          struct[filePath] = file;
-          resolve();
+    Promise.all(
+      Object.keys(dirStructure).map((filePath: string) => {
+        return new Promise((resolve) => {
+          asFile(dirStructure[filePath]).then((file: File) => {
+            struct[filePath] = file;
+            resolve();
+          });
         });
-      });
-    })).then(() => resolveAll(struct)).catch(rejectAll);
+      })
+    )
+      .then(() => resolveAll(struct))
+      .catch(rejectAll);
   });
+}
 
+type FutureProofDataTransferItem = DataTransferItem & { getAsEntry?: () => void };
+function getAsEntry(transferItem: FutureProofDataTransferItem) {
+  if (transferItem.getAsEntry) {
+    return transferItem.getAsEntry();
+  } else {
+    return transferItem.webkitGetAsEntry();
+  }
+}
+
+export function loadGameFolder(gameFolder: DataTransferItemList): Promise<FlatDirectoryStructure> {
+  return new Promise((resolveGameFolder, rejectGameFolder) => {
+    if (gameFolder.length > 1) {
+      rejectGameFolder(new Error('Only one element must be in the transfer.'));
+    }
+    const droppedItem: Entry = getAsEntry(gameFolder[0]);
+    if (!droppedItem.isDirectory) {
+      rejectGameFolder(new Error('Not a valid BG2:EE game folder.'));
+    }
+
+    buildDirectoryStructure(droppedItem as DirectoryEntry)
+      .then(createFilePointers)
+      .then((gameFolderStructure: FlatDirectoryStructure) =>
+        resolveGameFolder(gameFolderStructure)
+      );
+  });
 }
