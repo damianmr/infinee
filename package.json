@@ -5,6 +5,9 @@
     "dev": "parcel src/index.html",
     "build": "parcel build src/index.html"
   },
+  "browserslist": [
+    "since 2017-06"
+  ],
   "devDependencies": {
     "@types/blob-to-buffer": "^1.2.0",
     "@types/chai": "^4.1.7",
