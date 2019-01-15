@@ -9,6 +9,7 @@
     "@types/blob-to-buffer": "^1.2.0",
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
+    "@types/filesystem": "^0.0.29",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.18",
     "blob-to-buffer": "^1.2.8",
