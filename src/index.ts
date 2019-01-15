@@ -1,4 +1,5 @@
 import toBuffer from 'blob-to-buffer';
+import { buildDirectoryStructure } from './folder';
 import { getDialogsTable, getText, PopulatedDialogsTable } from './infTlk';
 
 // tslint:disable:no-console
@@ -35,14 +36,18 @@ function handleDialogsInputChange() {
 
 function handleDropsInFolderArea() {
   const dropArea = byId('folderDropArea');
-  const highlight = () => { dropArea.style.backgroundColor = 'lightblue'; }
-  const unhighlight = () => { dropArea.style.backgroundColor = 'transparent'; }
+  const highlight = () => {
+    dropArea.style.backgroundColor = 'lightblue';
+  };
+  const unhighlight = () => {
+    dropArea.style.backgroundColor = 'transparent';
+  };
   const preventDefaults: EventListener = (e: Event) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
-  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
     dropArea.addEventListener(eventName, preventDefaults);
   });
 
@@ -54,8 +59,10 @@ function handleDropsInFolderArea() {
     dropArea.addEventListener(eventName, unhighlight);
   });
 
-  dropArea.addEventListener('drop', (ev: DragEvent) => {
-    if (!ev.dataTransfer) { return; }
+  dropArea.addEventListener('drop', async (ev: DragEvent) => {
+    if (!ev.dataTransfer) {
+      return;
+    }
     const items: DataTransferItemList = ev.dataTransfer.items;
     if (items.length > 1) {
       console.log('Only drop your BG2:EE folder');
@@ -71,43 +78,41 @@ function handleDropsInFolderArea() {
     byId('dirContents').innerHTML = '';
     byId('dirContents').appendChild(listEl);
     processFolder(droppedItem as DirectoryEntry, listEl);
+
+    console.log('LA PRUEBA');
+    const tree = await buildDirectoryStructure(droppedItem as DirectoryEntry);
+    console.log('TREE', tree);
   });
 
   let lastFile: FileEntry;
 
   const processFolder = (directory: DirectoryEntry, parentList: HTMLElement) => {
-    console.log('getting here!', directory.name);
     const reader = directory.createReader();
     const readSomeEntries = () => {
-      console.log('Reading some entries in', directory.name);
-      reader.readEntries((directoryEntries) => {
-        if (directoryEntries.length === 0) { return; }
-        for (const entry of directoryEntries) {
-          console.log('Entry!', entry.name);
-          const nameEl = document.createElement('li');
-          nameEl.innerHTML = `${entry.name} (${entry.fullPath})`;
-          parentList.appendChild(nameEl);
-          if (entry.isDirectory) {
-            const listEl = document.createElement('ul');
-            nameEl.appendChild(listEl);
-            console.log('is directory!', entry.name);
-            processFolder(entry as DirectoryEntry, listEl);
-          } else {
-            lastFile = entry as FileEntry;
+      reader.readEntries(
+        (directoryEntries) => {
+          if (directoryEntries.length === 0) {
+            return;
           }
+          for (const entry of directoryEntries) {
+            const nameEl = document.createElement('li');
+            nameEl.innerHTML = `${entry.name} (${entry.fullPath})`;
+            parentList.appendChild(nameEl);
+            if (entry.isDirectory) {
+              const listEl = document.createElement('ul');
+              nameEl.appendChild(listEl);
+              processFolder(entry as DirectoryEntry, listEl);
+            } else {
+              lastFile = entry as FileEntry;
+            }
+          }
+          readSomeEntries();
+        },
+        (err) => {
+          console.error('Uknown error reading entries', err);
         }
-        readSomeEntries();
-      }, (err) => { console.error('Uknown error reading entries', err); });
-    }
+      );
+    };
     readSomeEntries();
   };
-
-  setTimeout(() => {
-    lastFile.file((f: File) => {
-      console.log('Heres the file!', f);
-    });
-  }, 5000);
 }
-
-
-
