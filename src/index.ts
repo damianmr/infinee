@@ -1,5 +1,5 @@
 import toBuffer from 'blob-to-buffer';
-import { loadGameFolder } from './folder';
+import { GameFilesMatcher, loadGameFolder } from './folder';
 import { getDialogsTable, getText, PopulatedDialogsTable } from './infTlk';
 
 // tslint:disable:no-console
@@ -82,7 +82,7 @@ function handleDropsInFolderArea() {
     // const tree = await buildDirectoryStructure(droppedItem as DirectoryEntry);
     // const treeFiles = await createFilePointers(tree);
     console.log('Building game folder dir structure...');
-    loadGameFolder(ev.dataTransfer.items).then(console.log);
+    loadGameFolder(ev.dataTransfer.items, GameFilesMatcher.BG2EE).then(console.log);
   });
 
   let lastFile: FileEntry;

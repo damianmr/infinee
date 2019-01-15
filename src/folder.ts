@@ -15,6 +15,15 @@ function asFile(fileEntry: FileEntry): Promise<File> {
   return new Promise((resolve, reject) => fileEntry.file(resolve, reject));
 }
 
+type EntryMatcher = (entry: Entry) => boolean;
+
+export const GameFilesMatcher: { [id: string]: EntryMatcher } = {
+  ANY_FILE: (x: Entry) => true,
+  BG2EE: (e: Entry) => {
+    return true;
+  }
+}
+
 export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEntries> {
   const directoryReader = directory.createReader();
   return new Promise((resolve, reject) => {
@@ -34,7 +43,8 @@ export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEnt
 }
 
 export function buildDirectoryStructure(
-  mainDirectory: DirectoryEntry
+  mainDirectory: DirectoryEntry,
+  allow: EntryMatcher
 ): Promise<FlatDirectoryStructureAsEntries> {
   const dirStructure: FlatDirectoryStructureAsEntries = {};
 
@@ -45,9 +55,9 @@ export function buildDirectoryStructure(
       return new Promise((resolveDir) => {
         readDirContents(dir).then((dirEntries: DirectoryEntries) => {
           for (const entry of dirEntries.entries) {
-            if (entry.isDirectory) {
+            if (entry.isDirectory && allow(entry)) {
               subDirsPromises.push(readDir(entry as DirectoryEntry));
-            } else {
+            } else if (allow(entry)) {
               dirStructure[`${entry.fullPath}`] = entry as FileEntry;
             }
           }
@@ -89,7 +99,7 @@ function getAsEntry(transferItem: FutureProofDataTransferItem) {
   }
 }
 
-export function loadGameFolder(gameFolder: DataTransferItemList): Promise<FlatDirectoryStructure> {
+export function loadGameFolder(gameFolder: DataTransferItemList, matcher: EntryMatcher): Promise<FlatDirectoryStructure> {
   return new Promise((resolveGameFolder, rejectGameFolder) => {
     if (gameFolder.length > 1) {
       rejectGameFolder(new Error('Only one element must be in the transfer.'));
@@ -99,7 +109,7 @@ export function loadGameFolder(gameFolder: DataTransferItemList): Promise<FlatDi
       rejectGameFolder(new Error('Not a valid BG2:EE game folder.'));
     }
 
-    buildDirectoryStructure(droppedItem as DirectoryEntry)
+    buildDirectoryStructure(droppedItem as DirectoryEntry, matcher)
       .then(createFilePointers)
       .then((gameFolderStructure: FlatDirectoryStructure) =>
         resolveGameFolder(gameFolderStructure)
