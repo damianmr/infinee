@@ -7,7 +7,7 @@ type DirectoryEntries = {
   directory: DirectoryEntry;
 };
 
-type FlatDirectoryStructureAsEntries = {
+export type FlatDirectoryStructureAsEntries = {
   [path: string]: FileEntry;
 };
 
@@ -21,15 +21,7 @@ function asFile(fileEntry: FileEntry): Promise<File> {
 
 type EntryMatcher = (entry: Entry) => boolean;
 
-const removeFirstDirectory = (path: string) => {
-  let newPath = path;
-  if (newPath.charAt(0) === '/') {
-    newPath = newPath.slice(1);
-  }
-};
-
 export const GameFilesMatcher: { [id: string]: EntryMatcher } = {
-  ANY_FILE: (x: Entry) => true,
   BG2EE: (e: Entry) => {
     const dirPath = dirname(e.fullPath).toLowerCase();
     const dirName = dirPath.slice(dirPath.lastIndexOf('/') + 1);

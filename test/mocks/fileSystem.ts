@@ -63,15 +63,23 @@ export class EntryMock implements Entry {
   ): void {
     throw new Error('Method not implemented.');
   }
+
 }
 
 export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
-  constructor({ name, fullPath }: { name: string; fullPath: string }) {
+
+  public entries: EntryMock[];
+
+  public lastReader?: DirectoryReaderMock;
+
+  constructor({ name, fullPath, childrenEntries }: { name: string; fullPath: string, childrenEntries?: EntryMock[] }) {
     super({ isFile: false, name, fullPath });
+    this.entries = childrenEntries || [];
   }
 
   public createReader(): DirectoryReader {
-    throw new Error('Method not implemented.');
+    this.lastReader = new DirectoryReaderMock(this.entries);
+    return this.lastReader;
   }
 
   public getFile(
@@ -101,21 +109,55 @@ export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
 }
 
 export class FileEntryMock extends EntryMock implements FileEntry {
-  
   constructor({ name, fullPath }: { name: string; fullPath: string }) {
     super({ isFile: true, name, fullPath });
   }
 
-  public createWriter(successCallback: FileWriterCallback, errorCallback?: ErrorCallback | undefined): void {
-    throw new Error("Method not implemented.");
+  public createWriter(
+    successCallback: FileWriterCallback,
+    errorCallback?: ErrorCallback | undefined
+  ): void {
+    throw new Error('Method not implemented.');
   }
   public file(successCallback: FileCallback, errorCallback?: ErrorCallback | undefined): void {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
+}
+
+export class DirectoryReaderMock implements DirectoryReader {
+
+  public static MAX_BATCH_SIZE: number = 2; // used to simulate the "batch" read of #readEntries
+
+  public batchCount: number;
+
+  private entries: EntryMock[];
+
+
+  constructor(entries: EntryMock[]) {
+    this.entries = entries;
+    this.batchCount = 0;
+  }
+
+  public readEntries(successCallback: EntriesCallback, errorCallback?: ErrorCallback | undefined): void {
+    const max = DirectoryReaderMock.MAX_BATCH_SIZE;
+    setTimeout(() => {
+      const nextBatch = this.entries.slice(0, max);
+      const entriesLeft = this.entries.slice(max);
+      successCallback(nextBatch);
+      if (nextBatch.length !== 0) {
+        this.batchCount += 1;
+      }
+      if (nextBatch.length < max) {
+        this.entries = [];
+      } else {
+        this.entries = entriesLeft;
+      }
+    }, 1);
+  }
+
 }
 
 MOCK_FILESYSTEM_ROOT = new DirectoryEntryMock({
   fullPath: '/mockFileSystem',
-  name: 'mockFileSystemRoot'
+  name: 'mockFileSystem'
 });
-
