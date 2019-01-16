@@ -11,7 +11,7 @@ export type FlatDirectoryStructureAsEntries = {
   [path: string]: FileEntry;
 };
 
-type FlatDirectoryStructure = {
+export type FlatDirectoryStructure = {
   [path: string]: File;
 };
 

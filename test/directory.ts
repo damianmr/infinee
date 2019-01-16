@@ -4,11 +4,13 @@ import { emit } from 'cluster';
 import 'mocha';
 import {
   buildDirectoryStructure,
+  createFilePointers,
+  FlatDirectoryStructure,
   FlatDirectoryStructureAsEntries,
   GameFilesMatcher,
   readDirContents
 } from '../src/directory';
-import { DirectoryEntryMock, DirectoryReaderMock, EntryMock } from './mocks/fileSystem';
+import { DirectoryEntryMock, DirectoryReaderMock, EntryMock, FileMock } from './mocks/fileSystem';
 import { buildDirEntry, buildFileEntry, mockDirStruct } from './mocks/fileSystemUtil';
 
 chai.use(chaiAsPromised);
@@ -196,6 +198,37 @@ describe('directory.ts', () => {
           done();
         }
       );
+    });
+  });
+
+  describe('createFilePointers', () => {
+    it('creates file pointers for all file entries in a directory', (done) => {
+      const rootFolder = 'Test Mock Folder';
+      const mockFolder = mockDirStruct(rootFolder, [
+        'entry1.jpg',
+        'subfolder1/subentry1.jpg',
+        'subfolder2/subentry2-1.jpg'
+      ]);
+
+      const path = (x: string) => `${mockFolder.fullPath}/${x}`;
+
+      buildDirectoryStructure(mockFolder, (x: Entry) => true)
+        .then(createFilePointers)
+        .then((dirStruct: FlatDirectoryStructure) => {
+          let f = dirStruct[path('entry1.jpg')];
+          expect(f instanceof FileMock).to.be.equal(true);
+          expect(f.name).to.be.equal(path('entry1.jpg'));
+
+          f = dirStruct[path('subfolder1/subentry1.jpg')];
+          expect(f instanceof FileMock).to.be.equal(true);
+          expect(f.name).to.be.equal(path('subfolder1/subentry1.jpg'));
+
+          f = dirStruct[path('subfolder2/subentry2-1.jpg')];
+          expect(f instanceof FileMock).to.be.equal(true);
+          expect(f.name).to.be.equal(path('subfolder2/subentry2-1.jpg'));
+
+          done();
+        });
     });
   });
 });

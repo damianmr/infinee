@@ -63,16 +63,22 @@ export class EntryMock implements Entry {
   ): void {
     throw new Error('Method not implemented.');
   }
-
 }
 
 export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
-
   public entries: EntryMock[];
 
   public lastReader?: DirectoryReaderMock;
 
-  constructor({ name, fullPath, childrenEntries }: { name: string; fullPath: string, childrenEntries?: EntryMock[] }) {
+  constructor({
+    name,
+    fullPath,
+    childrenEntries
+  }: {
+    name: string;
+    fullPath: string;
+    childrenEntries?: EntryMock[];
+  }) {
     super({ isFile: false, name, fullPath });
     this.entries = childrenEntries || [];
   }
@@ -120,25 +126,28 @@ export class FileEntryMock extends EntryMock implements FileEntry {
     throw new Error('Method not implemented.');
   }
   public file(successCallback: FileCallback, errorCallback?: ErrorCallback | undefined): void {
-    throw new Error('Method not implemented.');
+    setTimeout(() => {
+      successCallback(new FileMock(this.fullPath));
+    }, 1);
   }
 }
 
 export class DirectoryReaderMock implements DirectoryReader {
-
   public static MAX_BATCH_SIZE: number = 2; // used to simulate the "batch" read of #readEntries
 
   public batchCount: number;
 
   private entries: EntryMock[];
 
-
   constructor(entries: EntryMock[]) {
     this.entries = entries;
     this.batchCount = 0;
   }
 
-  public readEntries(successCallback: EntriesCallback, errorCallback?: ErrorCallback | undefined): void {
+  public readEntries(
+    successCallback: EntriesCallback,
+    errorCallback?: ErrorCallback | undefined
+  ): void {
     const max = DirectoryReaderMock.MAX_BATCH_SIZE;
     setTimeout(() => {
       const nextBatch = this.entries.slice(0, max);
@@ -154,7 +163,28 @@ export class DirectoryReaderMock implements DirectoryReader {
       }
     }, 1);
   }
+}
 
+export class FileMock implements File {
+  public lastModified: number;
+  public name: string;
+  public size: number;
+  public type: string;
+
+  constructor(name: string) {
+    this.name = name;
+    this.lastModified = Date.now();
+    this.size = 1;
+    this.type = 'mock';
+  }
+
+  public slice(
+    start?: number | undefined,
+    end?: number | undefined,
+    contentType?: string | undefined
+  ): Blob {
+    throw new Error('Method not implemented.');
+  }
 }
 
 MOCK_FILESYSTEM_ROOT = new DirectoryEntryMock({
