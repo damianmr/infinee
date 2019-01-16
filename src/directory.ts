@@ -1,3 +1,7 @@
+import { dirname, extname } from 'path';
+import { EntryMock } from '../test/mocks/fileSystem';
+import { LANG_FOLDER_REGEX } from './constants';
+
 type DirectoryEntries = {
   entries: Entry[];
   directory: DirectoryEntry;
@@ -17,12 +21,37 @@ function asFile(fileEntry: FileEntry): Promise<File> {
 
 type EntryMatcher = (entry: Entry) => boolean;
 
+const removeFirstDirectory = (path: string) => {
+  let newPath = path;
+  if (newPath.charAt(0) === '/') {
+    newPath = newPath.slice(1);
+  }
+};
+
 export const GameFilesMatcher: { [id: string]: EntryMatcher } = {
   ANY_FILE: (x: Entry) => true,
   BG2EE: (e: Entry) => {
-    return true;
+    const dirPath = dirname(e.fullPath).toLowerCase();
+    const dirName = dirPath.slice(dirPath.lastIndexOf('/') + 1);
+    const extName = extname(e.fullPath).toLowerCase();
+    const name = e.name.toLowerCase();
+    if (e.isDirectory) {
+      const isDataFolder = name === 'data';
+      const isLangFolder = name === 'lang';
+      const isOneLanguageFolder = LANG_FOLDER_REGEX.test(name);
+      const isDataFolderInLanguageFolder = isDataFolder && LANG_FOLDER_REGEX.test(dirName);
+      return (isDataFolder && !isDataFolderInLanguageFolder) || isLangFolder || isOneLanguageFolder;
+    } else {
+      const isImportant = ['chitin.key', 'dialog.tlk', 'dialogf.tlk'].indexOf(name) !== -1;
+      const isBif = extName === '.bif';
+      const isInDataFolder = dirName === 'data';
+      let parentsParent = dirname(e.fullPath.slice(0, e.fullPath.lastIndexOf('/')));
+      parentsParent = parentsParent.slice(parentsParent.lastIndexOf('/') + 1);
+      const isInLangFolder = isInDataFolder && LANG_FOLDER_REGEX.test(parentsParent);
+      return isImportant || (isBif && !isInLangFolder);
+    }
   }
-}
+};
 
 export function readDirContents(directory: DirectoryEntry): Promise<DirectoryEntries> {
   const directoryReader = directory.createReader();
@@ -99,7 +128,10 @@ function getAsEntry(transferItem: FutureProofDataTransferItem) {
   }
 }
 
-export function loadGameFolder(gameFolder: DataTransferItemList, matcher: EntryMatcher): Promise<FlatDirectoryStructure> {
+export function loadGameFolder(
+  gameFolder: DataTransferItemList,
+  matcher: EntryMatcher
+): Promise<FlatDirectoryStructure> {
   return new Promise((resolveGameFolder, rejectGameFolder) => {
     if (gameFolder.length > 1) {
       rejectGameFolder(new Error('Only one element must be in the transfer.'));
