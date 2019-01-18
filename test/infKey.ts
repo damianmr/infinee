@@ -151,5 +151,11 @@ describe('infKey.ts', () => {
         expect(itemsEntry.fileName).to.be.equal('data/Items.bif');
       });
     });
+
+    // TODO: Here we should check that all the files present in the chitin.key file
+    // are actually available to be read from the directory structure.
+    // Probably this is not the best place to do this kind of test as is an integration test
+    // between infKey.ts and directory.ts but I'm adding this empty test as a reminder.
+    it('verifies that all files present in the index are currently available as files');
   });
 });

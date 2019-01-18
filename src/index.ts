@@ -1,5 +1,4 @@
 import toBuffer from 'blob-to-buffer';
-import { GameFilesMatcher, loadGameFolder } from './directory';
 import { getDialogsTable, getText, PopulatedDialogsTable } from './infTlk';
 
 // tslint:disable:no-console
