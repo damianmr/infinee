@@ -76,10 +76,9 @@ describe('infBifFile.ts', () => {
       const resourceInfo = findResourceInfo(gameResourceIndex, 'AROW10', ResourceTypeID.ITM);
       const bifEntityEntry = getEntityEntry({
         index: itemsIndex,
-        locator: resourceInfo.locator,
-        resourceType: ResourceTypeID.ITM
+        resourceInfo
       });
-      const item: ItemDefinition = await getItem(itemsIndex, bifEntityEntry.locator);
+      const item: ItemDefinition = await getItem(itemsIndex, resourceInfo);
       expect(item.genericItemName).to.be.equal(6328);
       expect(item.lore).to.be.equal(30);
       expect(unpad(item.itemIcon)).to.be.equal('IAROW10');
@@ -90,10 +89,9 @@ describe('infBifFile.ts', () => {
       const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
       const bifEntityEntry = getEntityEntry({
         index: spellsIndex,
-        locator: resourceInfo.locator,
-        resourceType: ResourceTypeID.SPL
+        resourceInfo
       });
-      const spell: SpellDefinition = await getSpell(spellsIndex, bifEntityEntry.locator);
+      const spell: SpellDefinition = await getSpell(spellsIndex, resourceInfo);
       expect(spell.genericSpellName).to.be.equal(35553);
       expect(unpad(spell.spellIcon)).to.be.equal('SPWI917C');
     });

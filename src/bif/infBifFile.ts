@@ -1,5 +1,5 @@
 import { SmartBuffer } from 'smart-buffer';
-import { ResourceTypeID } from '../infKey';
+import { ResourceInfo, ResourceTypeID } from '../infKey';
 import { ItemDefinition, parseItemEntry } from './item';
 import { parseSpellEntry, SpellDefinition } from './spell';
 
@@ -112,30 +112,27 @@ export function getFilesIndex(biffBuffer: Buffer, indexName: string): Promise<Bi
 
 export function getEntityEntry({
   index,
-  resourceType,
-  locator
+  resourceInfo
 }: {
   index: BifIndex;
-  resourceType: ResourceTypeID;
-  locator: number;
+  resourceInfo: ResourceInfo;
 }): EntityFileEntry {
-  const entry: EntityFileEntry = index.entities[key(resourceType, locator)];
+  const entry: EntityFileEntry =
+    index.entities[key(resourceInfo.resourceType, resourceInfo.locator)];
   if (!entry) {
-    throw new Error(`Entity ${key(resourceType, locator)} not found in index ${index.id}`);
+    throw new Error(
+      `Entity ${key(resourceInfo.resourceType, resourceInfo.locator)} not found in index ${
+        index.id
+      }`
+    );
   }
   return entry;
 }
 
-export function getItem(index: BifIndex, locator: number): Promise<ItemDefinition> {
-  return parseItemEntry(
-    index,
-    getEntityEntry({ index, resourceType: ResourceTypeID.ITM, locator })
-  );
+export function getItem(index: BifIndex, resourceInfo: ResourceInfo): Promise<ItemDefinition> {
+  return parseItemEntry(index, getEntityEntry({ index, resourceInfo }));
 }
 
-export function getSpell(index: BifIndex, locator: number): Promise<SpellDefinition> {
-  return parseSpellEntry(
-    index,
-    getEntityEntry({ index, resourceType: ResourceTypeID.SPL, locator })
-  );
+export function getSpell(index: BifIndex, resourceInfo: ResourceInfo): Promise<SpellDefinition> {
+  return parseSpellEntry(index, getEntityEntry({ index, resourceInfo }));
 }
