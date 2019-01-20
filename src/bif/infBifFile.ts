@@ -110,6 +110,7 @@ export function getFilesIndex(biffBuffer: Buffer, indexName: string): Promise<Bi
   });
 }
 
+// TODO Make this receive two arguments
 export function getEntityEntry({
   index,
   resourceInfo

@@ -84,6 +84,19 @@ describe('infBifFile.ts', () => {
       expect(unpad(item.itemIcon)).to.be.equal('IAROW10');
     });
 
+    it('returned items do not have NULL terminated strings', async () => {
+      const resourceInfo = findResourceInfo(gameResourceIndex, 'AROW10', ResourceTypeID.ITM);
+      const bifEntityEntry = getEntityEntry({
+        index: itemsIndex,
+        resourceInfo
+      });
+      const item: ItemDefinition = await getItem(itemsIndex, resourceInfo);
+      expect(item.carrieddIcon.indexOf('\u0000')).to.be.equal(-1);
+      expect(item.itemIcon.indexOf('\u0000')).to.be.equal(-1);
+      expect(item.usedUpItem.indexOf('\u0000')).to.be.equal(-1);
+      expect(item.groundIcon.indexOf('\u0000')).to.be.equal(-1);
+    });
+
     it('parsing a known spell', async () => {
       const FREEDOM_SPELL = 'cdwi917a';
       const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
@@ -94,6 +107,17 @@ describe('infBifFile.ts', () => {
       const spell: SpellDefinition = await getSpell(spellsIndex, resourceInfo);
       expect(spell.genericSpellName).to.be.equal(35553);
       expect(unpad(spell.spellIcon)).to.be.equal('SPWI917C');
+    });
+
+    it('returned spells do not have NULL terminated strings', async () => {
+      const FREEDOM_SPELL = 'cdwi917a';
+      const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
+      const bifEntityEntry = getEntityEntry({
+        index: spellsIndex,
+        resourceInfo
+      });
+      const spell: SpellDefinition = await getSpell(spellsIndex, resourceInfo);
+      expect(spell.spellIcon.indexOf('\u0000')).to.be.equal(-1);
     });
 
   });

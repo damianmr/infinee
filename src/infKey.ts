@@ -16,7 +16,7 @@ export const enum ResourceTypeID {
   BS = 0x03f9 // 1017
 }
 
-const IndexableResourceTypes = [
+export const IndexableResourceTypes = [
   ResourceTypeID.ITM,
   ResourceTypeID.SPL,
   ResourceTypeID.CRE,
@@ -72,18 +72,27 @@ type ResourceMap = {
   [index: string]: ResourceInfo;
 };
 
+export function toResourceType(resourceType: string): ResourceTypeID {
+  if (IndexableResourceTypes.indexOf(parseInt(resourceType, 10)) === -1) {
+    throw new Error(`Cannot parse resource type "${resourceType}".`);
+  }
+  return parseInt(resourceType, 10);
+}
+
 export type GameResourceIndex = {
   header: KeyHeader;
   bifResources: BifEntry[];
-  resources: ResourcesByType /** @deprecated */;
+  /** @deprecated */
+  resources: ResourcesByType;
+  /** map with <resource_name>_<resource_type> as keys. */
   resources_: ResourceMap;
 };
 
 function resourceInfoKey(a: string | ResourceInfo, b?: ResourceTypeID): any {
   if (typeof a === 'string' && typeof b === 'number') {
-    return `${a}_${b}`.toLowerCase();
+    return `${unpad(a)}_${b}`.toLowerCase();
   } else if (typeof a !== 'string' && a.name && a.resourceType) {
-    return `${a.name}_${a.resourceType}`.toLowerCase();
+    return `${unpad(a.name)}_${a.resourceType}`.toLowerCase();
   } else {
     throw new Error(`Invalid arguments for resourceInfoKey. 1st arg: "${a}", 2nd arg: "${b}"`);
   }
@@ -198,6 +207,21 @@ export function findBifEntry(gameResourceIndex: GameResourceIndex, bifFileName: 
   return foundEntry;
 }
 
+export function findBifForResource(
+  gameResourceIndex: GameResourceIndex,
+  resInfo: ResourceInfo
+): BifEntry {
+  const entry = gameResourceIndex.bifResources[resInfo.bifKeyIndex];
+  if (!entry) {
+    throw new Error(
+      `Cannot find BIF entry for resource type "${resInfo.resourceType}" with name "${
+        resInfo.name
+      }" at index "${resInfo.bifKeyIndex}"`
+    );
+  }
+  return entry;
+}
+
 export function getGameResourceIndex(chitinDotKeyFile: Buffer): Promise<GameResourceIndex> {
   return new Promise((resolve, reject) => {
     try {
@@ -221,4 +245,15 @@ export function findResourceInfo(
     );
   }
   return info;
+}
+
+export function getAllResources(gameIndex: GameResourceIndex): ResourceInfo[] {
+  return Object.values(gameIndex.resources_);
+}
+
+export function getAllResourcesByType(
+  gameIndex: GameResourceIndex,
+  type: ResourceTypeID
+): ResourceInfo[] {
+  return Object.values(gameIndex.resources_).filter((r) => r.resourceType === type);
 }

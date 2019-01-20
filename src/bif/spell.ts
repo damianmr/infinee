@@ -1,4 +1,5 @@
 import { SmartBuffer } from 'smart-buffer';
+import { unpad } from '../util/legacyFilenamePadding';
 import { BifIndex, EntityFileEntry } from './infBifFile';
 
 export type SpellDefinition = {
@@ -36,7 +37,10 @@ export type SpellDefinition = {
   globalEffects: number;
 };
 
-export function parseSpellEntry(index: BifIndex, spellEntry: EntityFileEntry): Promise<SpellDefinition> {
+export function parseSpellEntry(
+  index: BifIndex,
+  spellEntry: EntityFileEntry
+): Promise<SpellDefinition> {
   return new Promise((resolve) => {
     index._buffer.readOffset = spellEntry.offset;
     const b = index._buffer;
@@ -61,7 +65,7 @@ export function parseSpellEntry(index: BifIndex, spellEntry: EntityFileEntry): P
       minCharisma: b.readUInt16LE(),
       spellLevel: b.readUInt32LE(),
       wUnknown3: b.readUInt16LE(),
-      spellIcon: b.readString(8),
+      spellIcon: unpad(b.readString(8)),
       wUnknown4: b.readUInt16LE(),
       chUnknown: b.readString(8),
       dwUnknown3: b.readUInt32LE(),

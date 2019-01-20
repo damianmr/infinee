@@ -132,6 +132,19 @@ describe('infKey.ts', () => {
         expect(resInfo.name).to.be.equal('AMUL01');
         expect(resInfo.resourceType).to.be.equal(ResourceTypeID.ITM);
       });
+
+      it('is not bothered by null terminated strings', () => {
+        // Item icon names, spell icons, etc, have a \u0000 at the end.
+        // I found that sometimes if use a resource name straight as it comes
+        // from the file system, the index won't be able to find the ResourceInfo
+        // because of this NULL character at the end of the resource name.
+        const resInfo: ResourceInfo = findResourceInfo(
+          gameResourceIndex,
+          'AMUL01\u0000',
+          ResourceTypeID.ITM
+        );
+        expect(resInfo.name).to.be.equal('AMUL01');
+      });
     });
 
     describe('Testing #findBifEntry', () => {
@@ -152,10 +165,21 @@ describe('infKey.ts', () => {
       });
     });
 
+    describe('Testing #findBifForResource', () => {
+
+      it('it should find a BIF file information based on a ResourceInfo');
+    });
+
     // TODO: Here we should check that all the files present in the chitin.key file
     // are actually available to be read from the directory structure.
     // Probably this is not the best place to do this kind of test as is an integration test
     // between infKey.ts and directory.ts but I'm adding this empty test as a reminder.
     it('verifies that all files present in the index are currently available as files');
+  });
+
+  describe('getter methods', () => {
+
+    it('returns all resources information in the index (getAllResources)');
+
   });
 });

@@ -1,4 +1,5 @@
 import { SmartBuffer } from 'smart-buffer';
+import { unpad } from '../util/legacyFilenamePadding';
 import { BifIndex, EntityFileEntry } from './infBifFile';
 
 export type ItemDefinition = {
@@ -51,7 +52,7 @@ export function parseItemEntry(
       // tslint:disable-next-line:object-literal-sort-keys
       genericItemName: b.readUInt32LE(),
       identifiedItemName: b.readUInt32LE(),
-      usedUpItem: b.readString(8), // "replacement item"
+      usedUpItem: unpad(b.readString(8)), // "replacement item"
       typeFlags: b.readUInt32LE(),
       category: b.readUInt16LE(),
       usability: b.readUInt32LE(),
@@ -66,13 +67,13 @@ export function parseItemEntry(
       minCharisma: b.readUInt16LE(),
       baseValue: b.readUInt32LE(),
       maxStackable: b.readUInt16LE(),
-      itemIcon: b.readString(8),
+      itemIcon: unpad(b.readString(8)),
       lore: b.readUInt16LE(),
-      groundIcon: b.readString(8),
+      groundIcon: unpad(b.readString(8)),
       baseWeight: b.readUInt32LE(),
       itemDescriptionGeneric: b.readUInt32LE(),
       itemDescriptionIdentified: b.readUInt32LE(),
-      carrieddIcon: b.readString(8),
+      carrieddIcon: unpad(b.readString(8)),
       enchantment: b.readUInt32LE(),
       abilityOffset: b.readUInt32LE(),
       abilityCount: b.readUInt16LE(),
