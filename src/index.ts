@@ -1,7 +1,30 @@
-import toBuffer from 'blob-to-buffer';
-import { getDialogsTable, getText, PopulatedDialogsTable } from './infTlk';
-
+import {
+  BifIndex,
+  getEntityEntry,
+  getFilesIndex as getFilesIndexInBIF,
+  getItem
+} from './bif/infBifFile';
+import { FlatDirectoryStructure } from './directory';
+import { getBif, getGameIndexFile, loadGameFolder, SupportedGameFolders } from './gameDirectory';
+import {
+  BifEntry,
+  findBifForResource,
+  findResourceInfo,
+  GameResourceIndex,
+  getAllResources,
+  getAllResourcesByType,
+  getGameResourceIndex,
+  IndexableResourceTypes,
+  ResourceInfo,
+  ResourceTypeID,
+  toResourceType
+} from './infKey';
+import t from './intl';
+import { ItemDefinition } from './bif/item';
 // tslint:disable:no-console
+
+let gameDir: FlatDirectoryStructure;
+let gi: GameResourceIndex;
 
 const byId = (id: string): HTMLElement => {
   const e = document.getElementById(id);
@@ -11,27 +34,28 @@ const byId = (id: string): HTMLElement => {
   return e;
 };
 
-document.addEventListener('DOMContentLoaded', handleDialogsInputChange);
-document.addEventListener('DOMContentLoaded', handleDropsInFolderArea);
+const templ = (
+  templateId: string,
+  targetEl: HTMLElement,
+  ctx: { [id: string]: string | number | { toString: () => string } },
+  append?: boolean
+) => {
+  const templateStr: string = byId(templateId).innerHTML;
+  let t = templateStr;
+  for (const key of Object.keys(ctx)) {
+    t = t.replace(`{${key}}`, ctx[key] as string);
+  }
+  if (append) {
+    const newEl = document.createElement('div');
+    newEl.innerHTML = t;
+    targetEl.appendChild(newEl.firstChild as Node);
+  } else {
+    targetEl.innerHTML = t;
+  }
+};
 
-function handleDialogsInputChange() {
-  const dialogsFileInput = byId('dialogsFile');
-  dialogsFileInput.addEventListener('change', (e: any) => {
-    const dialogsFile: File = e.srcElement.files[0];
-    toBuffer(dialogsFile, (err, buffer: Buffer) => {
-      getDialogsTable(buffer).then((dialogs: PopulatedDialogsTable) => {
-        const contents: HTMLElement = byId('contents');
-        contents.append(getText(dialogs, 1).replace('\n', '<br/>'));
-        contents.append(' ||| ');
-        contents.append(getText(dialogs, 10).replace('\n', '<br/>'));
-        contents.append(' ||| ');
-        contents.append(getText(dialogs, 100).replace('\n', '<br/>'));
-        contents.append(' ||| ');
-        contents.append(getText(dialogs, 1000).replace('\n', '<br/>'));
-      });
-    });
-  });
-}
+document.addEventListener('DOMContentLoaded', handleDropsInFolderArea);
+document.addEventListener('DOMContentLoaded', handleChangeInSelects);
 
 function handleDropsInFolderArea() {
   const dropArea = byId('folderDropArea');
@@ -62,57 +86,70 @@ function handleDropsInFolderArea() {
     if (!ev.dataTransfer) {
       return;
     }
+
     const items: DataTransferItemList = ev.dataTransfer.items;
     if (items.length > 1) {
       console.log('Only drop your BG2:EE folder');
       return;
     }
-    const droppedItem: Entry = items[0].webkitGetAsEntry();
-    if (!droppedItem.isDirectory) {
-      console.log('Only your BG2:EE folder is supported');
-      return;
-    }
-    const listEl = document.createElement('ul');
-    byId('dirContents').style.display = 'block';
-    byId('dirContents').innerHTML = '';
-    byId('dirContents').appendChild(listEl);
-    processFolder(droppedItem as DirectoryEntry, listEl);
 
-    // const tree = await buildDirectoryStructure(droppedItem as DirectoryEntry);
-    // const treeFiles = await createFilePointers(tree);
-    // console.log('Building game folder dir structure...');
-    // loadGameFolder(ev.dataTransfer.items, GameFilesMatcher.BG2EE).then(console.log);
+    templ('resOptTempl', byId('resourceType'), { value: -1000, name: 'Pick one' });
+    templ('resOptTempl', byId('resourceName'), { value: -1000, name: 'Pick one' });
+
+    gameDir = await loadGameFolder(SupportedGameFolders.BG2EE(items[0].webkitGetAsEntry()));
+    // console.log('gameDir', gameDir);
+    getGameIndexFile(gameDir)
+      .then(getGameResourceIndex)
+      .then((gameIndex: GameResourceIndex) => {
+        gi = gameIndex;
+        return getAllResources(gameIndex);
+      })
+      .then((resources: ResourceInfo[]) => {
+        for (const type of IndexableResourceTypes) {
+          const rType = t(`resourceType.${type}`);
+          templ(
+            'resOptTempl',
+            byId('resourceType'),
+            { value: type, name: `${rType} (Type: ${type})` },
+            true
+          );
+        }
+      });
+  });
+}
+
+function handleChangeInSelects() {
+  byId('resourceType').addEventListener('change', (e) => {
+    const resourceType: ResourceTypeID = toResourceType((e.currentTarget as HTMLFormElement).value);
+    const resInfos: ResourceInfo[] = getAllResourcesByType(gi, resourceType);
+    templ('resOptTempl', byId('resourceName'), { value: -1000, name: 'Pick one' });
+    for (const resInfo of resInfos) {
+      templ(
+        'resOptTempl',
+        byId('resourceName'),
+        { value: resInfo.name, name: `${resInfo.name}` },
+        true
+      );
+    }
   });
 
-  let lastFile: FileEntry;
+  byId('resourceName').addEventListener('change', (e) => {
+    const resType = toResourceType((byId('resourceType') as HTMLFormElement).value);
+    const resName = (e.currentTarget as HTMLFormElement).value;
 
-  const processFolder = (directory: DirectoryEntry, parentList: HTMLElement) => {
-    const reader = directory.createReader();
-    const readSomeEntries = () => {
-      reader.readEntries(
-        (directoryEntries) => {
-          if (directoryEntries.length === 0) {
-            return;
-          }
-          for (const entry of directoryEntries) {
-            const nameEl = document.createElement('li');
-            nameEl.innerHTML = `${entry.name} (${entry.fullPath})`;
-            parentList.appendChild(nameEl);
-            if (entry.isDirectory) {
-              const listEl = document.createElement('ul');
-              nameEl.appendChild(listEl);
-              processFolder(entry as DirectoryEntry, listEl);
-            } else {
-              lastFile = entry as FileEntry;
-            }
-          }
-          readSomeEntries();
-        },
-        (err) => {
-          console.error('Uknown error reading entries', err);
-        }
-      );
-    };
-    readSomeEntries();
-  };
+    const resourceInfo: ResourceInfo = findResourceInfo(gi, resName, resType);
+    if (resourceInfo.resourceType === ResourceTypeID.ITM) {
+      const itemBif: BifEntry = findBifForResource(gi, resourceInfo);
+      getBif(gameDir, itemBif)
+        .then((buffer: Buffer) => getFilesIndexInBIF(buffer, itemBif.fileName))
+        .then((index: BifIndex) => getItem(index, resourceInfo))
+        .then((itemDef: ItemDefinition) => {
+          const allBams = getAllResourcesByType(gi, ResourceTypeID.BAM);
+
+          const bams = allBams.filter((b) => b.name.toLowerCase().startsWith('iamu'));
+          const ri = findResourceInfo(gi, itemDef.itemIcon, ResourceTypeID.BAM)
+          console.log(itemDef, bams, ri);
+        });
+    }
+  });
 }

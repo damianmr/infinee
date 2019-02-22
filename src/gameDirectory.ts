@@ -1,5 +1,27 @@
-import { buildDirectoryStructure, createFilePointers, FlatDirectoryStructure, FlatDirectoryStructureAsEntries } from "./directory";
-import { EntryMatcher, GameFilesMatcher } from "./entryMatcher";
+import toBuffer from 'blob-to-buffer';
+import {
+  buildDirectoryStructure,
+  createFilePointers,
+  FlatDirectoryStructure,
+  FlatDirectoryStructureAsEntries
+} from './directory';
+import { EntryMatcher, GameFilesMatcher } from './entryMatcher';
+import { BifEntry } from './infKey';
+
+export type GameFolder = {
+  folder: DirectoryEntry;
+  matcher: EntryMatcher;
+};
+
+function newGameFolder(folder: DirectoryEntry, matcher: EntryMatcher) {
+  if (!folder.isDirectory) {
+    throw new Error(`Folder ${folder.name} is not a directory.`);
+  }
+  return {
+    folder,
+    matcher
+  };
+}
 
 function removeUnnecesaryPathParts(
   dirStruct: FlatDirectoryStructureAsEntries
@@ -52,32 +74,15 @@ function validateBasicIntegrity(
   });
 }
 
-export type GameFolder = {
-  folder: DirectoryEntry;
-  matcher: EntryMatcher;
-};
-
-export function loadGameFolder(gameFolder: GameFolder): Promise<FlatDirectoryStructure> {
+export async function loadGameFolder(gameFolder: GameFolder): Promise<FlatDirectoryStructure> {
   return new Promise((resolveGameFolder, reject) => {
     buildDirectoryStructure(gameFolder.folder, gameFolder.matcher)
       .then(validateBasicIntegrity)
       .then(removeUnnecesaryPathParts)
       .then(createFilePointers)
-      .then((gameFolderStructure: FlatDirectoryStructure) =>
-        resolveGameFolder(gameFolderStructure)
-      )
+      .then((gameFolderStructure: FlatDirectoryStructure) => resolveGameFolder(gameFolderStructure))
       .catch(reject);
   });
-}
-
-function newGameFolder(folder: DirectoryEntry, matcher: EntryMatcher) {
-  if (!folder.isDirectory) {
-    throw new Error(`Folder ${folder.name} is not a directory.`);
-  }
-  return {
-    folder,
-    matcher
-  };
 }
 
 export const SupportedGameFolders = {
@@ -85,3 +90,36 @@ export const SupportedGameFolders = {
     return newGameFolder(entry as DirectoryEntry, GameFilesMatcher.BG2EE);
   }
 };
+
+// TODO Type this so that it receives a GameDirectory!
+export async function getGameIndexFile(gameFolder: FlatDirectoryStructure): Promise<Buffer> {
+  if (!gameFolder['chitin.key']) {
+    throw new Error('Cannot find missing chitin.key');
+  }
+
+  return new Promise((resolve, reject) => {
+    toBuffer(gameFolder['chitin.key'], (err, buffer: Buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(buffer);
+      }
+    });
+  });
+}
+
+export function getBif(gameFolder: FlatDirectoryStructure, bifEntry: BifEntry): Promise<Buffer> {
+  if (!gameFolder[bifEntry.fileName]) {
+    throw new Error(`Cannot find missing bif entry in game folder "${bifEntry.fileName}"`);
+  }
+
+  return new Promise((resolve, reject) => {
+    toBuffer(gameFolder[bifEntry.fileName], (err, buffer: Buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(buffer);
+      }
+    });
+  });
+}

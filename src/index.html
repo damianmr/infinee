@@ -1,16 +1,27 @@
 <html>
 <body style="font-family: sans-serif">
-  Dialogs File: <input type="file" id="dialogsFile" />
-  <div id="contents"></div>
   <div
     id="folderDropArea"
-    style="margin: 20px 0; min-height: 120px; width: 500px; border: 2px dashed black; padding: 10px; text-align: center;"
+    style="position: relative; height: 80px; border: 2px dashed black; text-align: center;"
   >
-    Drop your Baldurs Gate II (EE) folder here.
+    <div style="transform: translateY(-50%);top: 50%;width: 100%;position: absolute;">(Drop your Baldurs Gate II (EE) folder here.</div>
   </div>
-  <div id="dirContents" style="display: none; width: 500px; border: 3px solid black; padding: 10px; margin: 10px 0;">
+  <div style="margin: 10px 0;">
+    <select id="resourceType">
+      <option selected>Pick one</option>
+    </select>
+    <select id="resourceName">
+      <option selected>Pick one</option>
+    </select>
+  </div>
+  <div id="resInfo" style="width: 500px; border: 3px solid black; padding: 10px; margin: 10px 0;">
 
   </div>
+  <script type='x/template' id="resInfoTempl">
+    <div>Resource Name: {name} </div>
+    <div>Resource Locator: {locator} </div>
+  </script>
+  <script type='x/template' id="resOptTempl"><option value="{value}">{name}</option></script>
   <script src="./index.ts"></script>
 </body>
 </html>
