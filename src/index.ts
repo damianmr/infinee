@@ -1,9 +1,11 @@
+// import { ItemDefinition } from './bif/item';
 import {
   BifIndex,
   getEntityEntry,
   getFilesIndex as getFilesIndexInBIF,
   getItem
 } from './bif/infBifFile';
+import { ItemDefinition } from './bif/item';
 import { FlatDirectoryStructure } from './directory';
 import { getBif, getGameIndexFile, loadGameFolder, SupportedGameFolders } from './gameDirectory';
 import {
@@ -20,7 +22,6 @@ import {
   toResourceType
 } from './infKey';
 import t from './intl';
-import { ItemDefinition } from './bif/item';
 // tslint:disable:no-console
 
 let gameDir: FlatDirectoryStructure;
@@ -143,12 +144,14 @@ function handleChangeInSelects() {
       getBif(gameDir, itemBif)
         .then((buffer: Buffer) => getFilesIndexInBIF(buffer, itemBif.fileName))
         .then((index: BifIndex) => getItem(index, resourceInfo))
-        .then((itemDef: ItemDefinition) => {
-          const allBams = getAllResourcesByType(gi, ResourceTypeID.BAM);
-
-          const bams = allBams.filter((b) => b.name.toLowerCase().startsWith('iamu'));
-          const ri = findResourceInfo(gi, itemDef.itemIcon, ResourceTypeID.BAM)
-          console.log(itemDef, bams, ri);
+        .then((itemDef: ItemDefinition) => Promise.resolve(itemDef.itemIcon))
+        .then((itemIcon: string) =>
+          Promise.resolve(
+            getAllResourcesByType(gi, ResourceTypeID.BAM).find((b) => b.name === itemIcon)
+          )
+        )
+        .then((resInfo: ResourceInfo | undefined) => {
+          console.log('Icon for this ITEM can be located with this ResourceInfo: ', resInfo);
         });
     }
   });
