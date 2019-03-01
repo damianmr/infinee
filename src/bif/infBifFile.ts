@@ -1,5 +1,6 @@
 import { SmartBuffer } from 'smart-buffer';
 import { ResourceInfo, ResourceTypeID } from '../infKey';
+import { BamV1Definition, parseBamEntry } from './bam';
 import { ItemDefinition, parseItemEntry } from './item';
 import { parseSpellEntry, SpellDefinition } from './spell';
 
@@ -130,10 +131,22 @@ export function getEntityEntry({
   return entry;
 }
 
-export function getItem(index: BifIndex, resourceInfo: ResourceInfo): Promise<ItemDefinition> {
-  return parseItemEntry(index, getEntityEntry({ index, resourceInfo }));
+// -----------
+// TODO I see no reason for these getItem|Spell|Bam functions to return a promise.
+// The parsing of the entity entry should be fast, right?
+// -----------
+
+export function getItem(index: BifIndex, itemResourceInfo: ResourceInfo): Promise<ItemDefinition> {
+  return parseItemEntry(index, getEntityEntry({ index, resourceInfo: itemResourceInfo }));
 }
 
-export function getSpell(index: BifIndex, resourceInfo: ResourceInfo): Promise<SpellDefinition> {
-  return parseSpellEntry(index, getEntityEntry({ index, resourceInfo }));
+export function getSpell(
+  index: BifIndex,
+  spellResourceInfo: ResourceInfo
+): Promise<SpellDefinition> {
+  return parseSpellEntry(index, getEntityEntry({ index, resourceInfo: spellResourceInfo }));
+}
+
+export function getBam(index: BifIndex, bamResourceInfo: ResourceInfo): Promise<BamV1Definition> {
+  return parseBamEntry(index, getEntityEntry({ index, resourceInfo: bamResourceInfo }));
 }

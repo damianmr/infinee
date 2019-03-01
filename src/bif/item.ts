@@ -1,4 +1,3 @@
-import { SmartBuffer } from 'smart-buffer';
 import { unpad } from '../util/legacyFilenamePadding';
 import { BifIndex, EntityFileEntry } from './infBifFile';
 

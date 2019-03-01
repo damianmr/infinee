@@ -1,6 +1,7 @@
 // import { ItemDefinition } from './bif/item';
 import {
   BifIndex,
+  getBam,
   getEntityEntry,
   getFilesIndex as getFilesIndexInBIF,
   getItem
@@ -137,22 +138,36 @@ function handleChangeInSelects() {
   byId('resourceName').addEventListener('change', (e) => {
     const resType = toResourceType((byId('resourceType') as HTMLFormElement).value);
     const resName = (e.currentTarget as HTMLFormElement).value;
+    let itemIconResInfo: ResourceInfo;
+    console.time();
+    const selectedElement: ResourceInfo = findResourceInfo(gi, resName, resType);
+    if (selectedElement.resourceType === ResourceTypeID.ITM) {
+      const itemBif: BifEntry = findBifForResource(gi, selectedElement);
 
-    const resourceInfo: ResourceInfo = findResourceInfo(gi, resName, resType);
-    if (resourceInfo.resourceType === ResourceTypeID.ITM) {
-      const itemBif: BifEntry = findBifForResource(gi, resourceInfo);
       getBif(gameDir, itemBif)
         .then((buffer: Buffer) => getFilesIndexInBIF(buffer, itemBif.fileName))
-        .then((index: BifIndex) => getItem(index, resourceInfo))
-        .then((itemDef: ItemDefinition) => Promise.resolve(itemDef.itemIcon))
-        .then((itemIcon: string) =>
-          Promise.resolve(
-            getAllResourcesByType(gi, ResourceTypeID.BAM).find((b) => b.name === itemIcon)
-          )
+        .then((index: BifIndex) => {
+          console.timeEnd();
+          return getItem(index, selectedElement)
+        })
+        .then((itemDef: ItemDefinition) =>
+          Promise.resolve(findResourceInfo(gi, itemDef.itemIcon, ResourceTypeID.BAM))
         )
-        .then((resInfo: ResourceInfo | undefined) => {
-          console.log('Icon for this ITEM can be located with this ResourceInfo: ', resInfo);
+        .then((resInfo: ResourceInfo) => {
+          itemIconResInfo = resInfo;
+          return findBifForResource(gi, resInfo);
+        })
+        .then((itemIconBif: BifEntry) => getBif(gameDir, itemIconBif))
+        .then((biffBufferWhereIconIs: Buffer) =>
+          getFilesIndexInBIF(biffBufferWhereIconIs, 'not-sure')
+        )
+        .then((indexWhereIconIs: BifIndex) => {
+          // console.timeEnd();
+          console.log('getBAM', getBam(indexWhereIconIs, itemIconResInfo));
         });
+      // .then((resInfo: ResourceInfo) => {
+      //   console.log('Icon (BAM) for this ITEM can be located with this ResourceInfo: ', resInfo);
+      // });
     }
   });
 }

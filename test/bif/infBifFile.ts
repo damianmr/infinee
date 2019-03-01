@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { BifIndex, getEntityEntry, getFilesIndex, getItem, getSpell } from '../../src/bif/infBifFile';
+import { BifIndex, getEntityEntry, getFilesIndex, getItem, getSpell, getBam } from '../../src/bif/infBifFile';
 import { ItemDefinition } from '../../src/bif/item';
 import { SpellDefinition } from '../../src/bif/spell';
 import {
@@ -16,6 +16,7 @@ import {
 } from '../../src/infKey';
 import { unpad } from '../../src/util/legacyFilenamePadding';
 import { MOCK_INSTALL } from '../constants';
+import { BamV1Definition } from '../../src/bif/bam';
 
 chai.use(chaiAsPromised);
 
@@ -61,6 +62,7 @@ describe('infBifFile.ts', () => {
   describe('Parsing of a bif file', () => {
     let itemsIndex: BifIndex;
     let spellsIndex: BifIndex;
+    let bamsIndex: BifIndex;
 
     before(async () => {
       const testItemsBif = findBifEntry(gameResourceIndex, 'items');
@@ -70,6 +72,10 @@ describe('infBifFile.ts', () => {
       const testSpellsBif = findBifEntry(gameResourceIndex, 'spells');
       const spellsBifBuffer = await readFileSync(join(MOCK_INSTALL, testSpellsBif.fileName));
       spellsIndex = await getFilesIndex(spellsBifBuffer, 'spells');
+
+      const testBamsBif = findBifEntry(gameResourceIndex, '25guibam');
+      const bamsBifBuffer = await readFileSync(join(MOCK_INSTALL, testBamsBif.fileName));
+      bamsIndex = await getFilesIndex(bamsBifBuffer, '25guibams');
     });
 
     it('parsing a known item', async () => {
@@ -118,6 +124,35 @@ describe('infBifFile.ts', () => {
       });
       const spell: SpellDefinition = await getSpell(spellsIndex, resourceInfo);
       expect(spell.spellIcon.indexOf('\u0000')).to.be.equal(-1);
+    });
+
+    describe('Parsing data for BAM files', () => {
+
+      it.only('creates bif entity for a given BAM file (v1, uncompressed) properly', async () => {
+        const TEST_BAM = 'iplot01f';
+        const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        const bifEntity = getEntityEntry({
+          index: bamsIndex,
+          resourceInfo
+        })
+        const bam: BamV1Definition = await getBam(bamsIndex, resourceInfo);
+        expect(bam.signature).to.be.equal('BAM ');
+        expect(bam.version).to.be.equal('V1  ');
+
+        // These values were taken from NearInfinity
+        expect(bam.cycleCount).to.be.equal(2);
+        expect(bam.frameCount).to.be.equal(2);
+
+        // All of these values were fine tuned. I assumed they were true,
+        // and then ran some manual tests with the rendering so I could be sure
+        // they were accurate. I am putting them here in case I break
+        // anything in the future, the values reported by the parsing code
+        // will be different in such a case.
+        expect(bam.transparentIndex).to.be.equal(0);
+        expect(bam.frameOffset).to.be.equal(24);
+        expect(bam.paletteOffset).to.be.equal(56);
+        expect(bam.frameLookUpTableOffset).to.be.equal(1080);
+      });
     });
 
   });
