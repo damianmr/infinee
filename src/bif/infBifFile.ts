@@ -1,6 +1,6 @@
 import { SmartBuffer } from 'smart-buffer';
 import { ResourceInfo, ResourceTypeID } from '../infKey';
-import { BamV1Definition, parseBamEntry } from './bam';
+import { BamV1ImageLocator, parseBamEntry } from './bam';
 import { ItemDefinition, parseItemEntry } from './item';
 import { parseSpellEntry, SpellDefinition } from './spell';
 
@@ -136,6 +136,16 @@ export function getEntityEntry({
 // The parsing of the entity entry should be fast, right?
 // -----------
 
+/**
+ * Returns the promise of an item definition that can be used to get its name,
+ * description, icon name, etc.
+ *
+ * @param index bif file where to look up for the item.
+ * @param itemResourceInfo the resource info (provided by the chitin.key file)
+ *  that will be used to find the the item definition in the given BIF file.
+ *
+ * @see ItemDefinition
+ */
 export function getItem(index: BifIndex, itemResourceInfo: ResourceInfo): Promise<ItemDefinition> {
   return parseItemEntry(index, getEntityEntry({ index, resourceInfo: itemResourceInfo }));
 }
@@ -147,6 +157,20 @@ export function getSpell(
   return parseSpellEntry(index, getEntityEntry({ index, resourceInfo: spellResourceInfo }));
 }
 
-export function getBam(index: BifIndex, bamResourceInfo: ResourceInfo): Promise<BamV1Definition> {
+/**
+ * Returns an object (BAMV1ImageLocator) that can be provided to #getBamImage. This
+ * object contains information about the BAM resource (like size, frame counts, etc.),
+ * the BIF file in which this resource is to be found, and the EntityFileEntry which
+ * points to the BIF header.
+ *
+ * @param index bif file where to look up for the item.
+ * @param itemResourceInfo the resource info (provided by the chitin.key file)
+ *  that will be used to find the the bam definition in the given BIF file.
+ */
+export function getBam(index: BifIndex, bamResourceInfo: ResourceInfo): Promise<BamV1ImageLocator> {
   return parseBamEntry(index, getEntityEntry({ index, resourceInfo: bamResourceInfo }));
 }
+
+// export function getBamImage(locator: BamV1ImageLocator, frame: number = 0) {
+//
+// }

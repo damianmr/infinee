@@ -3,7 +3,15 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { BifIndex, getEntityEntry, getFilesIndex, getItem, getSpell, getBam } from '../../src/bif/infBifFile';
+import { BamV1ImageLocator, BamV1Header } from '../../src/bif/bam';
+import {
+  BifIndex,
+  getBam,
+  getEntityEntry,
+  getFilesIndex,
+  getItem,
+  getSpell
+} from '../../src/bif/infBifFile';
 import { ItemDefinition } from '../../src/bif/item';
 import { SpellDefinition } from '../../src/bif/spell';
 import {
@@ -16,7 +24,6 @@ import {
 } from '../../src/infKey';
 import { unpad } from '../../src/util/legacyFilenamePadding';
 import { MOCK_INSTALL } from '../constants';
-import { BamV1Definition } from '../../src/bif/bam';
 
 chai.use(chaiAsPromised);
 
@@ -128,58 +135,45 @@ describe('infBifFile.ts', () => {
 
     describe('Parsing data for BAM files', () => {
 
-      it('creates bif entity for a given BAM file (v1, uncompressed) properly', async () => {
+      it('header of a given BAM file (v1, uncompressed) is properly parsed', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
         const bifEntity = getEntityEntry({
           index: bamsIndex,
           resourceInfo
-        })
-        const bam: BamV1Definition = await getBam(bamsIndex, resourceInfo);
-        expect(bam.signature).to.be.equal('BAM ');
-        expect(bam.version).to.be.equal('V1  ');
+        });
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const bamHeader: BamV1Header = imageLocator.header
+        expect(bamHeader.signature).to.be.equal('BAM ');
+        expect(bamHeader.version).to.be.equal('V1  ');
 
         // These values were taken from NearInfinity
-        expect(bam.cycleCount).to.be.equal(2);
-        expect(bam.frameCount).to.be.equal(2);
+        expect(bamHeader.cycleCount).to.be.equal(2);
+        expect(bamHeader.frameCount).to.be.equal(2);
 
         // All of these values were fine tuned. I assumed they were true,
         // and then ran some manual tests with the rendering so I could be sure
         // they were accurate. I am putting them here in case I break
         // anything in the future, the values reported by the parsing code
         // will be different in such a case.
-        expect(bam.transparentIndex).to.be.equal(0);
-        expect(bam.framesOffset).to.be.equal(24);
-        expect(bam.paletteOffset).to.be.equal(56);
-        expect(bam.frameLookUpTableOffset).to.be.equal(1080);
+        expect(bamHeader.transparentIndex).to.be.equal(0);
+        expect(bamHeader.framesOffset).to.be.equal(24);
+        expect(bamHeader.paletteOffset).to.be.equal(56);
+        expect(bamHeader.frameLookUpTableOffset).to.be.equal(1080);
       });
 
-      it('creates a color palette', async () => {
+      it('creates the color palette of a given BAM resource properly', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
         const bifEntity = getEntityEntry({
           index: bamsIndex,
           resourceInfo
-        })
-        const bam: BamV1Definition = await getBam(bamsIndex, resourceInfo);
-        expect(bam.signature).to.be.equal('BAM ');
-        expect(bam.version).to.be.equal('V1  ');
+        });
 
-        // These values were taken from NearInfinity
-        expect(bam.cycleCount).to.be.equal(2);
-        expect(bam.frameCount).to.be.equal(2);
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
 
-        // All of these values were fine tuned. I assumed they were true,
-        // and then ran some manual tests with the rendering so I could be sure
-        // they were accurate. I am putting them here in case I break
-        // anything in the future, the values reported by the parsing code
-        // will be different in such a case.
-        expect(bam.transparentIndex).to.be.equal(0);
-        expect(bam.framesOffset).to.be.equal(24);
-        expect(bam.paletteOffset).to.be.equal(56);
-        expect(bam.frameLookUpTableOffset).to.be.equal(1080);
+        
       });
     });
-
   });
 });

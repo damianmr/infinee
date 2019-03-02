@@ -3,29 +3,90 @@ import { BifIndex, EntityFileEntry } from './infBifFile';
 
 // tslint:disable:no-bitwise
 
-export type BamV1Definition = {
+/**
+ * Describes the header of a BAM image. With this
+ * information, we can look up for the original image data
+ * in a BIF file.
+ */
+export type BamV1Header = {
+
+  /** 'BAM ' | 'BAMC' */
   signature: string;
+
+  /** 'V1  ' | 'V2  ' */
   version: string;
+
+  /** Frames count in BAM resource */
   frameCount: number;
+
+  /** Cycles count in a BAM resource */
   cycleCount: number;
+
+  /** The color used for transparency mask */
   transparentIndex: number;
+
+  /**
+   * Where to seek to find frames' data. Relative
+   * to the beggining of a BAM file, not the BIF in
+   * which it is stored.
+   */
   framesOffset: number;
+
+  /**
+   * Where to seek to find palette's data. Relative
+   * to the beggining of a BAM file, not the BIF in
+   * which it is stored.
+   */
   paletteOffset: number;
+
+  /** Where to seek to find frame lookup table (TODO: Add more details) */
   frameLookUpTableOffset: number;
 };
 
-// export type BamV1Image = {
-//   palette: BamPalette;
-//   data: ImageData;
-//   width: number;
-//   height: number;
-// };
+/**
+ * Holds all the information that is required to have access
+ * to the image data of a BAM resource.
+ */
+export type BamV1ImageLocator = {
 
-type CompressedBamDefinition = {
-  signature: string;
-  version: string;
-  uncompressedDataLenght: string;
+  /** The BIF file where the image (BAM) is stored */
+  bif: BifIndex;
+
+  /** Information regarding as to where in the BIF file is the BAM header stored */
+  entry: EntityFileEntry;
+
+  /** Information about the image (palette, frames, cycles, pixels) */
+  header: BamV1Header;
+
+}
+
+/**
+ * Stores raw image data that can be used to render
+ * a BAM file into a canvas or any other format in
+ * which the pixel by pixel information could be used.
+ *
+ * SVG could be acandidate for easier testing, it's been discarded
+ * because the resulting SVG would be massive in size compared
+ * to canvas versions.
+ */
+export type BamV1Image = {
+
+  /**
+   * An array of 256 colors (or less) that are used in the image.
+   */
+  palette: BamPalette;
+
+  /**
+   * Raw data that can be used to feed a canvas#putImageData method.
+   */
+  image: ImageData;
 };
+
+// type CompressedBamDefinition = {
+//   signature: string;
+//   version: string;
+//   uncompressedDataLenght: string;
+// };
 
 type BamFrame = {
   width: number;
@@ -37,32 +98,10 @@ type BamFrame = {
 
 type BamPalette = number[];
 
-// type BamCycle = {
-//   frameIndexCount: number;
-//   firstFrameIndex: number;
-// };
-
-/*
-struct INF_BAM_FRAME
-{
-    readUInt16LE	wWidth;
-    readUInt16LE	wHeight;
-    readUInt16LE	wCenterX;
-    readUInt16LE	wCenterY;
-    readUInt32LE	dwFrameDataOffset;		// bit 31 is a flag for RLE. 1 = RLE
-};
-
-struct INF_BAM_CYCLE
-{
-    readUInt16LE	wFrameIndexCount;
-    readUInt16LE	wFirstFrameIndex;			// Index into the frame lookup table.
-};
-*/
-
 export function parseBamEntry(
   index: BifIndex,
   bamEntry: EntityFileEntry
-): Promise<BamV1Definition> {
+): Promise<BamV1ImageLocator> {
   return new Promise((resolve) => {
     index._buffer.readOffset = bamEntry.offset;
     const b = index._buffer;
@@ -75,16 +114,21 @@ export function parseBamEntry(
     } else if (version === 'V2') {
       throw new Error('Unsupported BAM version');
     } else {
-      resolve(parseV1BamHeader(index, bamEntry));
+      const bamHeader: BamV1Header = parseV1BamHeader(index, bamEntry);
+      resolve({
+        bif: index,
+        entry: bamEntry,
+        header: bamHeader,
+      });
     }
   });
 }
 
-function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Definition {
+function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Header {
   index._buffer.readOffset = bamEntry.offset;
   const b = index._buffer;
 
-  const bamDef: BamV1Definition = {
+  const bamDef: BamV1Header = {
     signature: unpad(b.readString(4)),
     version: unpad(b.readString(4)),
     // tslint:disable-next-line:object-literal-sort-keys
@@ -99,38 +143,36 @@ function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Defi
   return bamDef;
 }
 
-function parseV1UncompressedBamData(
-  index: BifIndex,
-  bamEntry: EntityFileEntry,
-  bamDef: BamV1Definition,
+export function getImageData(
+  locator: BamV1ImageLocator,
   frameWanted: number = 0
-): ImageData {
-  if (frameWanted > bamDef.frameCount) {
-    throw new Error(`BAM file does not have frame "#${frameWanted}". BIF ID: "${index.id}"`);
+): BamV1Image {
+  if (frameWanted > locator.header.frameCount) {
+    throw new Error(`BAM file does not have frame "#${frameWanted}". BIF ID: "${locator.bif.id}"`);
   }
 
-  const b = index._buffer;
-  b.readOffset = bamEntry.offset + bamDef.framesOffset;
+  const bifFile = locator.bif._buffer;
+  bifFile.readOffset = locator.entry.offset + locator.header.framesOffset;
 
-  const palette = buildColorsPalette(index, bamEntry, bamDef);
+  const palette = buildColorsPalette(locator.bif, locator.entry, locator.header);
 
   // move the offset to the specific frame we want to take
   // TODO Find a better, more direct, way.
   for (let i = 0; i < frameWanted; i++) {
-    b.readUInt16LE(); // width
-    b.readUInt16LE(); // height
-    b.readUInt16LE(); // centerX
-    b.readUInt16LE(); // centerY
-    b.readUInt32LE(); // frameDataOffset
+    bifFile.readUInt16LE(); // width
+    bifFile.readUInt16LE(); // height
+    bifFile.readUInt16LE(); // centerX
+    bifFile.readUInt16LE(); // centerY
+    bifFile.readUInt32LE(); // frameDataOffset
   }
 
   const frameToDraw: BamFrame = {
-    width: b.readUInt16LE(),
+    width: bifFile.readUInt16LE(),
     // tslint:disable-next-line:object-literal-sort-keys
-    height: b.readUInt16LE(),
-    centerX: b.readUInt16LE(),
-    centerY: b.readUInt16LE(),
-    frameDataOffset: b.readUInt32LE()
+    height: bifFile.readUInt16LE(),
+    centerX: bifFile.readUInt16LE(),
+    centerY: bifFile.readUInt16LE(),
+    frameDataOffset: bifFile.readUInt32LE()
   };
 
   // b.readOffset = bamEntry.offset + (frameToDraw.frameDataOffset & 0x7fffffff);
@@ -202,9 +244,12 @@ function parseV1UncompressedBamData(
     }
     */
   return {
-    data: Uint8ClampedArray.from([123, 123, 123]),
-    height: 10,
-    width: 10
+    image: {
+      data: Uint8ClampedArray.from([123, 123, 123]),
+      height: 10,
+      width: 10
+    },
+    palette
   };
 }
 
@@ -233,7 +278,7 @@ function parseV1UncompressedBamData(
 function buildColorsPalette(
   index: BifIndex,
   bamEntry: EntityFileEntry,
-  bamDef: BamV1Definition
+  bamDef: BamV1Header
 ): BamPalette {
   const originalBufferOffset = index._buffer.readOffset;
   // buffer.readOffset = bamEntry.offset + bamDef.paletteOffset;
