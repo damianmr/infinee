@@ -1,6 +1,6 @@
 import { SmartBuffer } from 'smart-buffer';
 import { ResourceInfo, ResourceTypeID } from '../infKey';
-import { BamV1ImageLocator, parseBamEntry } from './bam';
+import { BamV1Image, BamV1ImageLocator, BitmapMode, getImageData, parseBamEntry } from './bam';
 import { ItemDefinition, parseItemEntry } from './item';
 import { parseSpellEntry, SpellDefinition } from './spell';
 
@@ -171,6 +171,12 @@ export function getBam(index: BifIndex, bamResourceInfo: ResourceInfo): Promise<
   return parseBamEntry(index, getEntityEntry({ index, resourceInfo: bamResourceInfo }));
 }
 
-// export function getBamImage(locator: BamV1ImageLocator, frame: number = 0) {
-//
-// }
+export function getBamImage(
+  locator: BamV1ImageLocator,
+  { frame, bitmapMode }: { frame: number; bitmapMode: BitmapMode } = {
+    bitmapMode: 'RGBA',
+    frame: 0
+  }
+): Promise<BamV1Image> {
+  return getImageData(locator, { frame, bitmapMode });
+}

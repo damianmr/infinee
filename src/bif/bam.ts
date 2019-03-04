@@ -1,4 +1,6 @@
+import { debug } from 'util';
 import { unpad } from '../util/legacyFilenamePadding';
+import { addAlpha, intToRGB } from '../util/rgba';
 import { BifIndex, EntityFileEntry } from './infBifFile';
 
 // tslint:disable:no-bitwise
@@ -9,7 +11,6 @@ import { BifIndex, EntityFileEntry } from './infBifFile';
  * in a BIF file.
  */
 export type BamV1Header = {
-
   /** 'BAM ' | 'BAMC' */
   signature: string;
 
@@ -48,7 +49,6 @@ export type BamV1Header = {
  * to the image data of a BAM resource.
  */
 export type BamV1ImageLocator = {
-
   /** The BIF file where the image (BAM) is stored */
   bif: BifIndex;
 
@@ -57,8 +57,7 @@ export type BamV1ImageLocator = {
 
   /** Information about the image (palette, frames, cycles, pixels) */
   header: BamV1Header;
-
-}
+};
 
 /**
  * Stores raw image data that can be used to render
@@ -70,17 +69,23 @@ export type BamV1ImageLocator = {
  * to canvas versions.
  */
 export type BamV1Image = {
-
   /**
    * An array of 256 colors (or less) that are used in the image.
    */
   palette: BamPalette;
 
   /**
+   * Metadata of the frame that was just parsed
+   */
+  frame: BamFrame;
+
+  /**
    * Raw data that can be used to feed a canvas#putImageData method.
    */
   image: ImageData;
 };
+
+export type BitmapMode = 'RGBA' | 'ABGR';
 
 // type CompressedBamDefinition = {
 //   signature: string;
@@ -98,6 +103,23 @@ type BamFrame = {
 
 type BamPalette = number[];
 
+type DebugPixel = {
+  paletteIndex: number;
+  red: number;
+  green: number;
+  blue: number;
+  pixelIndex: number;
+};
+
+/**
+ * Parses a given EntityFileEntry as a BAM file, returning the header which can
+ * be used to find a given image in such file.
+ *
+ * Returns a promise with a BamV1ImageLocator that can be feed into #getImageData.
+ *
+ * @param index a BIF file index, where the EntityFileEntry is supposed to be.
+ * @param bamEntry the entity to parse as a BAM file.
+ */
 export function parseBamEntry(
   index: BifIndex,
   bamEntry: EntityFileEntry
@@ -118,7 +140,7 @@ export function parseBamEntry(
       resolve({
         bif: index,
         entry: bamEntry,
-        header: bamHeader,
+        header: bamHeader
       });
     }
   });
@@ -145,126 +167,36 @@ function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Head
 
 export function getImageData(
   locator: BamV1ImageLocator,
-  frameWanted: number = 0
-): BamV1Image {
-  if (frameWanted > locator.header.frameCount) {
-    throw new Error(`BAM file does not have frame "#${frameWanted}". BIF ID: "${locator.bif.id}"`);
+  { frame, bitmapMode }: { frame: number; bitmapMode: BitmapMode } = {
+    bitmapMode: 'RGBA',
+    frame: 0
   }
+): Promise<BamV1Image> {
+  return new Promise((resolve) => {
+    const palette: BamPalette = buildColorsPalette(locator.bif, locator.entry, locator.header);
+    const frameHeader: BamFrame = parseFrameHeader(locator, frame);
+    const image: ImageData = processFrame(locator, palette, frameHeader, bitmapMode);
 
-  const bifFile = locator.bif._buffer;
-  bifFile.readOffset = locator.entry.offset + locator.header.framesOffset;
-
-  const palette = buildColorsPalette(locator.bif, locator.entry, locator.header);
-
-  // move the offset to the specific frame we want to take
-  // TODO Find a better, more direct, way.
-  for (let i = 0; i < frameWanted; i++) {
-    bifFile.readUInt16LE(); // width
-    bifFile.readUInt16LE(); // height
-    bifFile.readUInt16LE(); // centerX
-    bifFile.readUInt16LE(); // centerY
-    bifFile.readUInt32LE(); // frameDataOffset
-  }
-
-  const frameToDraw: BamFrame = {
-    width: bifFile.readUInt16LE(),
-    // tslint:disable-next-line:object-literal-sort-keys
-    height: bifFile.readUInt16LE(),
-    centerX: bifFile.readUInt16LE(),
-    centerY: bifFile.readUInt16LE(),
-    frameDataOffset: bifFile.readUInt32LE()
-  };
-
-  // b.readOffset = bamEntry.offset + (frameToDraw.frameDataOffset & 0x7fffffff);
-  // const frameIsCompressed = !(frameToDraw.frameDataOffset & 0x80000000);
-
-  // const pixelsCount = frameToDraw.width * frameToDraw.height;
-  // const pixelsOffset = 0;
-  // const count = 0;
-  // const x = 0;
-  // const y = 0;
-
-  // while (pixelsRead < pixelsCount) {
-  //   if (frameIsCompressed && asdsa) {
-
-  //   } else {
-
-  //   }
-  // }
-
-  /*
-    int nNumPixels = pFrame->wWidth * pFrame->wHeight;
-    int nSourceOff = 0;
-    int nPixelCount = 0;
-    int nCount;
-    int x = 0;
-    int y = 0;
-
-    while(nPixelCount < nNumPixels)
-    {
-        if (bIsCompressed && pRawBits[nSourceOff] == m_pHeader->chTransparentIndex)
-        {
-            nSourceOff++;
-            nCount = pRawBits[nSourceOff] + 1;
-            while(nCount)
-            {
-                //TODO: double-check x/y
-                image.setPixel(x, y, clrTrans);
-                nCount--;
-                nPixelCount++;
-
-                if (++x >= pFrame->wWidth) {
-                    x = 0;
-                    ++y;
-                }
-            }
-
-            nSourceOff++;
-        }
-        else
-        {
-            // If it is not compressed, still need to catch the transparent pixels and
-            // fill with the transaprent color.
-            if (pRawBits[nSourceOff] == m_pHeader->chTransparentIndex)
-                image.setPixel(x, y, clrTrans);
-            else {
-                QRgb revColor  = *(pPal + pRawBits[nSourceOff]);
-                QRgb realColor = qRgb(qRed(revColor), qGreen(revColor), qBlue(revColor));
-                image.setPixel(x, y, realColor);
-            }
-
-            nSourceOff++;
-            nPixelCount++;
-
-            if (++x >= pFrame->wWidth) {
-                x = 0;
-                ++y;
-            }
-        }
-    }
-    */
-  return {
-    image: {
-      data: Uint8ClampedArray.from([123, 123, 123]),
-      height: 10,
-      width: 10
-    },
-    palette
-  };
+    resolve({
+      frame: frameHeader,
+      image,
+      palette
+    });
+  });
 }
 
 /**
  * Builds the color palette for a BAMV1Definition.
  *
  * The algorithm is based on NearInfinity's implementation, which works even in cases
- * where the palette has less than 256 colors (See BAMV1Decoder#init method).
+ * where the palette has less than 256 colors (See BAMV1Decoder#init method in NearInfinity source).
  *
  * I honestly don't understand the reasons why this algorithm reliably works. Most probably
  * has to be with implementation details of BAM files in edge cases that are unknown to me.
  *
  * A different approach is used by EEKeeper. There, the palette is not built at all. The
  * algorithm iterates through the pixels and then to get the color of a given pixel is
- * just a matter of using paletteOffset[pixelCurrentlyProcessing].
+ * just a matter of using paletteOffset[valueOfPixelCurrentlyBeingProcessed].
  *
  * Although I found EEKeeper's approach simpler (I don't plan to use the palette in the UI),
  * is harder to test. If I have the palette information, I can code tests in which I
@@ -313,4 +245,126 @@ function buildColorsPalette(
 
   index._buffer.readOffset = originalBufferOffset;
   return bamPalette;
+}
+
+function parseFrameHeader(locator: BamV1ImageLocator, frameWanted: number): BamFrame {
+  if (frameWanted > locator.header.frameCount) {
+    throw new Error(`BAM file does not have frame "#${frameWanted}". BIF ID: "${locator.bif.id}"`);
+  }
+
+  const bifFile = locator.bif._buffer;
+  const originalBufferOffset = bifFile.readOffset;
+
+  bifFile.readOffset = locator.entry.offset + locator.header.framesOffset;
+
+  // move the offset to the specific frame we want to take
+  // TODO Find a better, more direct, way for god's sake.
+  for (let i = 0; i < frameWanted; i++) {
+    bifFile.readUInt16LE(); // width
+    bifFile.readUInt16LE(); // height
+    bifFile.readUInt16LE(); // centerX
+    bifFile.readUInt16LE(); // centerY
+    bifFile.readUInt32LE(); // frameDataOffset
+  }
+
+  const frameToDraw: BamFrame = {
+    width: bifFile.readUInt16LE(),
+    // tslint:disable-next-line:object-literal-sort-keys
+    height: bifFile.readUInt16LE(),
+    centerX: bifFile.readUInt16LE(),
+    centerY: bifFile.readUInt16LE(),
+    frameDataOffset: bifFile.readUInt32LE()
+  };
+
+  bifFile.readOffset = originalBufferOffset;
+
+  return frameToDraw;
+}
+
+function processFrame(
+  locator: BamV1ImageLocator,
+  palette: BamPalette,
+  frame: BamFrame,
+  bitmapMode: BitmapMode
+): ImageData {
+  const bifFile = locator.bif._buffer;
+  const originalBufferOffset = bifFile.readOffset;
+  const readByte = (): number => bifFile.readBuffer(1)[0];
+
+  const frameDataOffset = frame.frameDataOffset & 0x7fffffff;
+  const isCompressed = !(frame.frameDataOffset & 0x80000000);
+
+  bifFile.readOffset = locator.entry.offset + frameDataOffset;
+
+  const transparentPaletteIndex = locator.header.transparentIndex;
+  const pixelCount = frame.width * frame.height;
+
+  const pixels: number[] = [];
+  const debugPixels: DebugPixel[] = [];
+
+  while (pixels.length < pixelCount) {
+    const currentByte = readByte();
+    if (isCompressed && currentByte === transparentPaletteIndex) {
+      const repeatedPixelsCount = readByte() + 1; // run the run-length encoding (RTE), repeating N pixels
+      for (let i = 0; i < repeatedPixelsCount; i++) {
+        pixels[pixels.length] = palette[transparentPaletteIndex];
+        debugPixels[pixels.length - 1] = {
+          ...intToRGB(pixels[pixels.length - 1]),
+          paletteIndex: transparentPaletteIndex,
+          pixelIndex: pixels.length - 1
+        };
+      }
+    } else if (currentByte === transparentPaletteIndex) {
+      pixels[pixels.length] = palette[transparentPaletteIndex];
+      debugPixels[pixels.length - 1] = {
+        ...intToRGB(pixels[pixels.length - 1]),
+        paletteIndex: transparentPaletteIndex,
+        pixelIndex: pixels.length - 1
+      };
+    } else {
+      pixels[pixels.length] = palette[currentByte];
+      debugPixels[pixels.length - 1] = {
+        ...intToRGB(pixels[pixels.length - 1]),
+        paletteIndex: currentByte,
+        pixelIndex: pixels.length - 1
+      };
+    }
+  }
+
+  setLastProcessedFrame(debugPixels);
+
+  // Decompose each pixel color into RGBA representation. After
+  // this transformation, the number of elements in the imageRawData
+  // becomes width * height * 4.
+  const imageRawData: number[] = pixels.reduce(
+    (output, pixelColor) => {
+      const rgba = addAlpha(intToRGB(pixelColor), 255);
+      if (bitmapMode === 'RGBA') {
+        return output.concat([rgba.red, rgba.green, rgba.blue, rgba.alpha]);
+      } else if (bitmapMode === 'ABGR') {
+        return output.concat([rgba.alpha, rgba.blue, rgba.green, rgba.red]);
+      } else {
+        throw new Error('Impossible case but I have to put it anyway or typescript will kill me.');
+      }
+    },
+    [] as number[]
+  );
+
+  bifFile.readOffset = originalBufferOffset;
+
+  return {
+    data: Uint8ClampedArray.from(imageRawData),
+    height: frame.height,
+    width: frame.width
+  };
+}
+
+let lastProcessedFrame: DebugPixel[] = [];
+
+function setLastProcessedFrame(pixels: DebugPixel[]) {
+  lastProcessedFrame = pixels;
+}
+
+export function getLastProcessedFrameDebugInfo() {
+  return lastProcessedFrame;
 }

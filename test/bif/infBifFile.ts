@@ -1,12 +1,14 @@
+import { encode as encodeBMP } from 'bmp-js';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFile, writeFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { BamV1ImageLocator, BamV1Header } from '../../src/bif/bam';
+import { BamV1Header, BamV1Image, BamV1ImageLocator, getLastProcessedFrameDebugInfo} from '../../src/bif/bam';
 import {
   BifIndex,
   getBam,
+  getBamImage,
   getEntityEntry,
   getFilesIndex,
   getItem,
@@ -134,7 +136,6 @@ describe('infBifFile.ts', () => {
     });
 
     describe('Parsing data for BAM files', () => {
-
       it('header of a given BAM file (v1, uncompressed) is properly parsed', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
@@ -143,7 +144,7 @@ describe('infBifFile.ts', () => {
           resourceInfo
         });
         const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
-        const bamHeader: BamV1Header = imageLocator.header
+        const bamHeader: BamV1Header = imageLocator.header;
         expect(bamHeader.signature).to.be.equal('BAM ');
         expect(bamHeader.version).to.be.equal('V1  ');
 
@@ -171,8 +172,84 @@ describe('infBifFile.ts', () => {
         });
 
         const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const image: BamV1Image = await getBamImage(imageLocator);
 
+        expect(image.palette.length).to.be.eql(256);
+
+        // These values were hand-picked from NearInfinity.
+        expect(image.palette[0]).to.be.eql(0x00ff00);
+        expect(image.palette[7]).to.be.eql(0x9c9494);
+        expect(image.palette[15]).to.be.eql(0x847b73);
+        expect(image.palette[31]).to.be.eql(0x6b5231);
+        expect(image.palette[63]).to.be.eql(0xe7bd6b);
+        expect(image.palette[127]).to.be.eql(0xb59442);
+        expect(image.palette[255]).to.be.eql(0x000000);
+      });
+
+      it('creates frame header data properly', async () => {
+        const TEST_BAM = 'iplot01f';
+        const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        const bifEntity = getEntityEntry({
+          index: bamsIndex,
+          resourceInfo
+        });
+
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const image1: BamV1Image = await getBamImage(imageLocator, {
+          bitmapMode: 'RGBA',
+          frame: 0
+        });
+        const image2: BamV1Image = await getBamImage(imageLocator, {
+          bitmapMode: 'RGBA',
+          frame: 1
+        });
+
+        // Values from NearInfinity
+        expect(image1.frame.centerX).to.be.equal(9);
+        expect(image1.frame.centerY).to.be.equal(15);
+        expect(image1.frame.width).to.be.equal(19);
+        expect(image1.frame.height).to.be.equal(31);
+
+        expect(image2.frame.centerX).to.be.equal(14);
+        expect(image2.frame.centerY).to.be.equal(28);
+        expect(image2.frame.width).to.be.equal(33);
+        expect(image2.frame.height).to.be.equal(56);
+      });
+
+      it.only('can create bitmaps out of a BAM file (uncompressed)', async () => {
+        const TEST_BAM = 'iplot01f';
+        const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        const bifEntity = getEntityEntry({
+          index: bamsIndex,
+          resourceInfo
+        });
+
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const frameImage: BamV1Image = await getBamImage(imageLocator, {
+          bitmapMode: 'ABGR',
+          frame: 0
+        });
+
+        const debugInfo = JSON.stringify(getLastProcessedFrameDebugInfo(), null, '\t');
+        const bmpRaw = encodeBMP(frameImage.image);
         
+        writeFileSync('./debug.json', debugInfo);
+        writeFileSync(`./${TEST_BAM}.bmp`, bmpRaw.data);
+
+        // const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        // const image1: BamV1Image = await getBamImage(imageLocator, {
+        //   bitmapMode: 'ABGR',
+        //   frame: 0
+        // });
+
+        // const bmpRaw = encodeBMP(image1.image);
+        // writeFile(`./${TEST_BAM}.bmp`, bmpRaw, (err) => {
+        //   if (!err) {
+        //     done();
+        //   } else {
+        //     throw err;
+        //   }
+        // })
       });
     });
   });
