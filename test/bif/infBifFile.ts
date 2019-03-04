@@ -216,7 +216,7 @@ describe('infBifFile.ts', () => {
         expect(image2.frame.height).to.be.equal(56);
       });
 
-      it.only('can create bitmaps out of a BAM file (uncompressed)', async () => {
+      it('can create bitmaps out of a BAM file (uncompressed)', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
         const bifEntity = getEntityEntry({
