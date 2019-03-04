@@ -361,10 +361,26 @@ function processFrame(
 
 let lastProcessedFrame: DebugPixel[] = [];
 
+/**
+ * Sets debug information on the last processed frame.
+ *
+ * Useful for debugging, as the DebugPixel array allows
+ * to see the pixels of the image before they are decomposed
+ * into RGBA values.
+ *
+ * @param pixels latest frame processed by the function #processFrame
+ */
 function setLastProcessedFrame(pixels: DebugPixel[]) {
   lastProcessedFrame = pixels;
 }
 
-export function getLastProcessedFrameDebugInfo() {
+/**
+ * Returns debug information about the last frame processed
+ * by #processFrame.
+ *
+ * This information can be used during debugging sessions. It exposes
+ * the color values decomposed in RGBA parts and palette information.
+ */
+export function getLastProcessedFrameDebugInfo(): DebugPixel[] {
   return lastProcessedFrame;
 }

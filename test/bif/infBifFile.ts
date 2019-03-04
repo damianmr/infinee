@@ -230,26 +230,11 @@ describe('infBifFile.ts', () => {
           frame: 0
         });
 
-        const debugInfo = JSON.stringify(getLastProcessedFrameDebugInfo(), null, '\t');
         const bmpRaw = encodeBMP(frameImage.image);
-        
-        writeFileSync('./debug.json', debugInfo);
-        writeFileSync(`./${TEST_BAM}.bmp`, bmpRaw.data);
 
-        // const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
-        // const image1: BamV1Image = await getBamImage(imageLocator, {
-        //   bitmapMode: 'ABGR',
-        //   frame: 0
-        // });
-
-        // const bmpRaw = encodeBMP(image1.image);
-        // writeFile(`./${TEST_BAM}.bmp`, bmpRaw, (err) => {
-        //   if (!err) {
-        //     done();
-        //   } else {
-        //     throw err;
-        //   }
-        // })
+        // const debugInfo = JSON.stringify(getLastProcessedFrameDebugInfo(), null, '\t');
+        // writeFileSync('./debug.json', debugInfo);
+        writeFileSync(`./test/output/${TEST_BAM}.bmp`, bmpRaw.data);
       });
     });
   });
