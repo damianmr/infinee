@@ -1,7 +1,8 @@
-import { debug } from 'util';
+import { inflateRaw, ungzip } from 'pako';
 import { unpad } from '../util/legacyFilenamePadding';
 import { addAlpha, intToRGB } from '../util/rgba';
 import { BifIndex, EntityFileEntry } from './infBifFile';
+import { SmartBuffer } from 'smart-buffer';
 
 // tslint:disable:no-bitwise
 
@@ -87,11 +88,11 @@ export type BamV1Image = {
 
 export type BitmapMode = 'RGBA' | 'ABGR';
 
-// type CompressedBamDefinition = {
-//   signature: string;
-//   version: string;
-//   uncompressedDataLenght: string;
-// };
+type BamV1CompressedHeader = {
+  signature: string;
+  version: string;
+  uncompressedDataLenght: number;
+};
 
 type BamFrame = {
   width: number;
@@ -132,6 +133,22 @@ export function parseBamEntry(
     const version: string = unpad(b.readString(4));
 
     if (signature === 'BAMC') {
+      const bamCompressedHeader: BamV1CompressedHeader = parseV2BamHeader(index, bamEntry);
+
+      const originalOffset = index._buffer.readOffset;
+      index._buffer.readOffset = bamEntry.offset;
+      const buff = index._buffer;
+      buff.readString(4);
+      buff.readString(4);
+      buff.readUInt32LE();
+      const gzipBuff = buff.readBuffer(bamEntry.size - 12);
+      // console.log('gzipBuff', gzipBuff);
+      const AAA = ungzip(gzipBuff);
+      const smb = SmartBuffer.fromBuffer(Buffer.from(AAA));
+      // console.log(AAA);
+
+      index._buffer.readOffset = originalOffset;
+
       throw new Error('Cannot handle compressed BAMs yet');
     } else if (version === 'V2') {
       throw new Error('Unsupported BAM version');
@@ -162,6 +179,22 @@ function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Head
     frameLookUpTableOffset: b.readUInt32LE()
   };
 
+  return bamDef;
+}
+
+function parseV2BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1CompressedHeader {
+  const originalOffset = index._buffer.readOffset;
+  index._buffer.readOffset = bamEntry.offset;
+  const b = index._buffer;
+
+  const bamDef: BamV1CompressedHeader = {
+    signature: unpad(b.readString(4)),
+    version: unpad(b.readString(4)),
+    // tslint:disable-next-line:object-literal-sort-keys
+    uncompressedDataLenght: b.readUInt32LE()
+  };
+
+  index._buffer.readOffset = originalOffset;
   return bamDef;
 }
 

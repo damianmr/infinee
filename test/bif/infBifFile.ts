@@ -236,6 +236,28 @@ describe('infBifFile.ts', () => {
         // writeFileSync('./debug.json', debugInfo);
         writeFileSync(`./test/output/${TEST_BAM}.bmp`, bmpRaw.data);
       });
+
+      it.only('can create bitmaps out of a BAM file (compressed)', async () => {
+        const TEST_BAM = 'iplat20';
+        const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        const bifEntity = getEntityEntry({
+          index: bamsIndex,
+          resourceInfo
+        });
+
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const frameImage: BamV1Image = await getBamImage(imageLocator, {
+          bitmapMode: 'ABGR',
+          frame: 0
+        });
+
+        const bmpRaw = encodeBMP(frameImage.image);
+
+        // const debugInfo = JSON.stringify(getLastProcessedFrameDebugInfo(), null, '\t');
+        // writeFileSync('./debug.json', debugInfo);
+        writeFileSync(`./test/output/${TEST_BAM}.bmp`, bmpRaw.data);
+      });
+
     });
   });
 });
