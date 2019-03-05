@@ -1,8 +1,8 @@
 import { inflateRaw, ungzip } from 'pako';
+import { SmartBuffer } from 'smart-buffer';
 import { unpad } from '../util/legacyFilenamePadding';
 import { addAlpha, intToRGB } from '../util/rgba';
 import { BifIndex, EntityFileEntry } from './infBifFile';
-import { SmartBuffer } from 'smart-buffer';
 
 // tslint:disable:no-bitwise
 
@@ -133,27 +133,18 @@ export function parseBamEntry(
     const version: string = unpad(b.readString(4));
 
     if (signature === 'BAMC') {
-      const bamCompressedHeader: BamV1CompressedHeader = parseV2BamHeader(index, bamEntry);
-
-      const originalOffset = index._buffer.readOffset;
-      index._buffer.readOffset = bamEntry.offset;
-      const buff = index._buffer;
-      buff.readString(4);
-      buff.readString(4);
-      buff.readUInt32LE();
-      const gzipBuff = buff.readBuffer(bamEntry.size - 12);
-      // console.log('gzipBuff', gzipBuff);
-      const AAA = ungzip(gzipBuff);
-      const smb = SmartBuffer.fromBuffer(Buffer.from(AAA));
-      // console.log(AAA);
-
-      index._buffer.readOffset = originalOffset;
-
-      throw new Error('Cannot handle compressed BAMs yet');
+      const uncompressedBam: Buffer = uncompressV1Bam(index, bamEntry);
+      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam, bamEntry);
+      resolve({
+        bif: index,
+        entry: bamEntry,
+        header: bamHeader
+      });
     } else if (version === 'V2') {
       throw new Error('Unsupported BAM version');
     } else {
-      const bamHeader: BamV1Header = parseV1BamHeader(index, bamEntry);
+      index._buffer.readOffset = bamEntry.offset;
+      const bamHeader: BamV1Header = parseV1BamHeader(index._buffer.readBuffer(), bamEntry);
       resolve({
         bif: index,
         entry: bamEntry,
@@ -163,39 +154,47 @@ export function parseBamEntry(
   });
 }
 
-function parseV1BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1Header {
-  index._buffer.readOffset = bamEntry.offset;
-  const b = index._buffer;
+function parseV1BamHeader(bamFile: Buffer, bamEntry: EntityFileEntry): BamV1Header {
+  const b = SmartBuffer.fromBuffer(bamFile);
+
+  const signature = unpad(b.readString(4));
+  const version = unpad(b.readString(4));
+  const frameCount = b.readUInt16LE();
+  const cycleCount = b.readUInt8();
+  const transparentIndex = b.readUInt8();
+  const framesOffset = b.readUInt32LE();
+  const paletteOffset = b.readUInt32LE();
+  const frameLookUpTableOffset = b.readUInt32LE();
 
   const bamDef: BamV1Header = {
-    signature: unpad(b.readString(4)),
-    version: unpad(b.readString(4)),
-    // tslint:disable-next-line:object-literal-sort-keys
-    frameCount: b.readUInt16LE(),
-    cycleCount: b.readUInt8(),
-    transparentIndex: b.readUInt8(),
-    framesOffset: b.readUInt32LE(),
-    paletteOffset: b.readUInt32LE(),
-    frameLookUpTableOffset: b.readUInt32LE()
+    cycleCount,
+    frameCount,
+    frameLookUpTableOffset,
+    framesOffset,
+    paletteOffset,
+    signature,
+    transparentIndex,
+    version
   };
 
   return bamDef;
 }
 
-function parseV2BamHeader(index: BifIndex, bamEntry: EntityFileEntry): BamV1CompressedHeader {
+function uncompressV1Bam(index: BifIndex, bamEntry: EntityFileEntry): Buffer {
+  const HEADER_BYTES = 12; // Bytes for signature, version and uncompressed length
   const originalOffset = index._buffer.readOffset;
-  index._buffer.readOffset = bamEntry.offset;
-  const b = index._buffer;
 
-  const bamDef: BamV1CompressedHeader = {
-    signature: unpad(b.readString(4)),
-    version: unpad(b.readString(4)),
-    // tslint:disable-next-line:object-literal-sort-keys
-    uncompressedDataLenght: b.readUInt32LE()
-  };
+  index._buffer.readOffset = bamEntry.offset;
+  index._buffer.readString(4); // Skip signature ('BAMC') (4 bytes)
+  index._buffer.readString(4); // Skip version ('V1  ') (4 bytes)
+  index._buffer.readUInt32LE(); // Skip uncompressedDataLength (4 bytes)
+
+  const bufferToUnzip = index._buffer.readBuffer(bamEntry.size - HEADER_BYTES);
+  const uncompressedBamBuffer = ungzip(bufferToUnzip);
 
   index._buffer.readOffset = originalOffset;
-  return bamDef;
+
+  return Buffer.from(uncompressedBamBuffer);
 }
 
 export function getImageData(

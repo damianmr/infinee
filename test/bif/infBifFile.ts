@@ -135,7 +135,7 @@ describe('infBifFile.ts', () => {
       expect(spell.spellIcon.indexOf('\u0000')).to.be.equal(-1);
     });
 
-    describe('Parsing data for BAM files', () => {
+    describe.only('Parsing data for BAM files', () => {
       it('header of a given BAM file (v1, uncompressed) is properly parsed', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
@@ -163,6 +163,33 @@ describe('infBifFile.ts', () => {
         expect(bamHeader.frameLookUpTableOffset).to.be.equal(1080);
       });
 
+      it('header of a given BAM file (v1, compressed) is properly parsed', async () => {
+        const TEST_BAM = 'iplat20';
+        const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        const bifEntity = getEntityEntry({
+          index: bamsIndex,
+          resourceInfo
+        });
+        const imageLocator: BamV1ImageLocator = await getBam(bamsIndex, resourceInfo);
+        const bamHeader: BamV1Header = imageLocator.header;
+        expect(bamHeader.signature).to.be.equal('BAM ');
+        expect(bamHeader.version).to.be.equal('V1  ');
+
+        // These values were taken from NearInfinity
+        expect(bamHeader.cycleCount).to.be.equal(2);
+        expect(bamHeader.frameCount).to.be.equal(2);
+
+        // All of these values were fine tuned. I assumed they were true,
+        // and then ran some manual tests with the rendering so I could be sure
+        // they were accurate. I am putting them here in case I break
+        // anything in the future, the values reported by the parsing code
+        // will be different in such a case.
+        // expect(bamHeader.transparentIndex).to.be.equal(0);
+        // expect(bamHeader.framesOffset).to.be.equal(24);
+        // expect(bamHeader.paletteOffset).to.be.equal(56);
+        // expect(bamHeader.frameLookUpTableOffset).to.be.equal(1080);
+      });
+
       it('creates the color palette of a given BAM resource properly', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
@@ -186,7 +213,7 @@ describe('infBifFile.ts', () => {
         expect(image.palette[255]).to.be.eql(0x000000);
       });
 
-      it('creates frame header data properly', async () => {
+      it('creates frame header data properly (uncompressed BAMs)', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
         const bifEntity = getEntityEntry({
@@ -237,7 +264,7 @@ describe('infBifFile.ts', () => {
         writeFileSync(`./test/output/${TEST_BAM}.bmp`, bmpRaw.data);
       });
 
-      it.only('can create bitmaps out of a BAM file (compressed)', async () => {
+      it.skip('can create bitmaps out of a BAM file (compressed)', async () => {
         const TEST_BAM = 'iplat20';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
         const bifEntity = getEntityEntry({
