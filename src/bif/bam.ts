@@ -46,15 +46,47 @@ export type BamV1Header = {
 };
 
 /**
+ * Describes the header of a compressed BAM image
+ */
+type BamV1CompressedHeader = {
+  /** 'BAMC' */
+  signature: string;
+
+  /** 'V1  ' */
+  version: string;
+
+  /** Length of the uncompressed contents */
+  uncompressedDataLength: number;
+}
+
+type UncompressedBamV1 = {
+
+  /** Header of the compressed file */
+  header: BamV1CompressedHeader,
+
+  /** Uncompressed contents file */
+  contents: Buffer
+}
+
+/**
  * Holds all the information that is required to have access
  * to the image data of a BAM resource.
  */
 export type BamV1ImageLocator = {
-  /** The BIF file where the image (BAM) is stored */
-  bif: BifIndex;
+  /**
+   * The buffer of the file where the image (BAM) is stored.
+   *
+   * For uncompressed BAMs (v1), this buffer is the BIF file in
+   * which the image is stored.
+   *
+   * For compressed BAMs (v1), this buffer is the uncompressed
+   * file that was stored in the BIF file.
+   */
+  buffer: Buffer;
 
-  /** Information regarding as to where in the BIF file is the BAM header stored */
-  entry: EntityFileEntry;
+  offsetToBAM: number;
+
+  bamSize: number;
 
   /** Information about the image (palette, frames, cycles, pixels) */
   header: BamV1Header;
@@ -117,27 +149,31 @@ export type BamV1Image = {
  * [pixel0r, pixel0g, pixel0b, pixel0a, ..., pixelNr, pixelNg, pixelNb, pixelNa]
  *
  * This array can be used to render the image by different meanings. In testing,
- * we export to BMP and check the results. In a web context, a HTMLCanvas will be
- * better.
+ * we export to BMP and check the results. In a web context, a HTMLCanvas is
+ * the most usual way.
  */
 export type BitmapMode = 'RGBA' | 'ABGR';
 
-type BamV1CompressedHeader = {
-  signature: string;
-  version: string;
-  uncompressedDataLenght: number;
-};
-
+/**
+ * Metadata for a frame. Used during rendering.
+ */
 type BamFrame = {
   width: number;
   height: number;
   centerX: number;
   centerY: number;
-  frameDataOffset: number; // bit 31 is a flag for RLE. 1 = RLE
+  /** Where in the file where the frame is stored is the image data for this frame. */
+  frameDataOffset: number;
 };
 
+/**
+ * An array of 256 numbers (int) with values between 0 and 0xFFFFFF
+ */
 type BamPalette = number[];
 
+/**
+ * Useful debug information when testing the rendering of frames.
+ */
 type DebugPixel = {
   paletteIndex: number;
   red: number;
@@ -160,29 +196,31 @@ export function parseBamEntry(
   bamEntry: EntityFileEntry
 ): Promise<BamV1ImageLocator> {
   return new Promise((resolve) => {
-    index._buffer.readOffset = bamEntry.offset;
-    const b = index._buffer;
+    const b = SmartBuffer.fromBuffer(index.buffer);
+    b.readOffset = bamEntry.offset;
 
     const signature: string = unpad(b.readString(4));
     const version: string = unpad(b.readString(4));
 
     if (signature === 'BAMC') {
-      const uncompressedBam: Buffer = uncompressV1Bam(index, bamEntry);
-      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam, bamEntry);
+      const uncompressedBam: UncompressedBamV1 = uncompressV1Bam(index, bamEntry);
+      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam.contents, bamEntry);
       resolve({
-        bif: index,
-        entry: bamEntry,
-        header: bamHeader
+        bamSize: uncompressedBam.header.uncompressedDataLength,
+        buffer: uncompressedBam.contents,
+        header: bamHeader,
+        offsetToBAM: 0
       });
     } else if (version === 'V2') {
-      throw new Error('Unsupported BAM version');
+      throw new Error('BAM V2 files are not supported.');
     } else {
-      index._buffer.readOffset = bamEntry.offset;
-      const bamHeader: BamV1Header = parseV1BamHeader(index._buffer.readBuffer(), bamEntry);
+      b.readOffset = bamEntry.offset;
+      const bamHeader: BamV1Header = parseV1BamHeader(b.readBuffer(), bamEntry);
       resolve({
-        bif: index,
-        entry: bamEntry,
-        header: bamHeader
+        bamSize: bamEntry.size,
+        buffer: index.buffer,
+        header: bamHeader,
+        offsetToBAM: bamEntry.offset
       });
     }
   });
@@ -214,21 +252,23 @@ function parseV1BamHeader(bamFile: Buffer, bamEntry: EntityFileEntry): BamV1Head
   return bamDef;
 }
 
-function uncompressV1Bam(index: BifIndex, bamEntry: EntityFileEntry): Buffer {
+function uncompressV1Bam(index: BifIndex, bamEntry: EntityFileEntry): UncompressedBamV1 {
   const HEADER_BYTES = 12; // Bytes for signature, version and uncompressed length
-  const originalOffset = index._buffer.readOffset;
+  const b = SmartBuffer.fromBuffer(index.buffer);
 
-  index._buffer.readOffset = bamEntry.offset;
-  index._buffer.readString(4); // Skip signature ('BAMC') (4 bytes)
-  index._buffer.readString(4); // Skip version ('V1  ') (4 bytes)
-  index._buffer.readUInt32LE(); // Skip uncompressedDataLength (4 bytes)
+  b.readOffset = bamEntry.offset;
 
-  const bufferToUnzip = index._buffer.readBuffer(bamEntry.size - HEADER_BYTES);
+  const signature = b.readString(4);
+  const version = b.readString(4);
+  const uncompressedDataLength = b.readUInt32LE();
+
+  const bufferToUnzip = b.readBuffer(bamEntry.size - HEADER_BYTES);
   const uncompressedBamBuffer = ungzip(bufferToUnzip);
 
-  index._buffer.readOffset = originalOffset;
-
-  return Buffer.from(uncompressedBamBuffer);
+  return {
+    contents: Buffer.from(uncompressedBamBuffer),
+    header: { signature, version, uncompressedDataLength }
+  }
 }
 
 export function getImageData(
@@ -239,7 +279,7 @@ export function getImageData(
   }
 ): Promise<BamV1Image> {
   return new Promise((resolve) => {
-    const palette: BamPalette = buildColorsPalette(locator.bif, locator.entry, locator.header);
+    const palette: BamPalette = buildColorsPalette(locator);
     const frameHeader: BamFrame = parseFrameHeader(locator, frame);
     const image: ImageData = processFrame(locator, palette, frameHeader, bitmapMode);
 
@@ -267,29 +307,23 @@ export function getImageData(
  * Although I found EEKeeper's approach simpler (I don't plan to use the palette in the UI),
  * is harder to test. If I have the palette information, I can code tests in which I
  * compare the color numbers in the palette for different items/objects with the information
- * displayed in NearInfinity.
+ * displayed by NearInfinity.
  *
- * @param index The BIF file that holds an entry for the BAM file that is to be retrieved.
- * @param bamEntry the BAM file locator in the BIF file.
- * @param bamDef the BAM file descriptor (where to read the frames, the header, cycles, etc).
+ * @param locator a BamV1ImageLocator.
  */
 function buildColorsPalette(
-  index: BifIndex,
-  bamEntry: EntityFileEntry,
-  bamDef: BamV1Header
+  locator: BamV1ImageLocator,
 ): BamPalette {
-  const originalBufferOffset = index._buffer.readOffset;
-  // buffer.readOffset = bamEntry.offset + bamDef.paletteOffset;
 
   const offsets: number[] = [
-    bamDef.frameLookUpTableOffset,
-    bamDef.framesOffset,
-    bamDef.paletteOffset,
-    bamEntry.size
+    locator.header.frameLookUpTableOffset,
+    locator.header.framesOffset,
+    locator.header.paletteOffset,
+    locator.bamSize
   ];
 
-  const sortedOffsets = offsets.sort((a: number, b: number) => a - b);
-  const paletteIndex = sortedOffsets.indexOf(bamDef.paletteOffset);
+  const sortedOffsets = offsets.sort((n1: number, n2: number) => n1 - n2);
+  const paletteIndex = sortedOffsets.indexOf(locator.header.paletteOffset);
   let entriesCount = 256;
   if (paletteIndex >= 0 && paletteIndex + 1 < sortedOffsets.length) {
     entriesCount = Math.min(
@@ -303,25 +337,28 @@ function buildColorsPalette(
     bamPalette[i] = 0x00ff00;
   }
 
-  index._buffer.readOffset = bamEntry.offset + bamDef.paletteOffset;
+  const b = SmartBuffer.fromBuffer(locator.buffer);
+  b.readOffset = locator.offsetToBAM + locator.header.paletteOffset;
   for (let i = 0; i < entriesCount; i++) {
-    const color = index._buffer.readUInt32LE();
+    const color = b.readUInt32LE();
     bamPalette[i] = color;
   }
 
-  index._buffer.readOffset = originalBufferOffset;
   return bamPalette;
 }
 
+/**
+ * Parse the given file in the BamV1ImageLocator in search of the wanted frame to
+ * read its metadata, which will be used later on for the processing.
+ */
 function parseFrameHeader(locator: BamV1ImageLocator, frameWanted: number): BamFrame {
   if (frameWanted > locator.header.frameCount) {
-    throw new Error(`BAM file does not have frame "#${frameWanted}". BIF ID: "${locator.bif.id}"`);
+    throw new Error(`BAM file does not have frame "#${frameWanted}".`);
   }
 
-  const bifFile = locator.bif._buffer;
-  const originalBufferOffset = bifFile.readOffset;
+  const bifFile = SmartBuffer.fromBuffer(locator.buffer);
 
-  bifFile.readOffset = locator.entry.offset + locator.header.framesOffset;
+  bifFile.readOffset = locator.offsetToBAM + locator.header.framesOffset;
 
   // move the offset to the specific frame we want to take
   // TODO Find a better, more direct, way for god's sake.
@@ -342,25 +379,36 @@ function parseFrameHeader(locator: BamV1ImageLocator, frameWanted: number): BamF
     frameDataOffset: bifFile.readUInt32LE()
   };
 
-  bifFile.readOffset = originalBufferOffset;
-
   return frameToDraw;
 }
 
+/**
+ * Runs the algorithm that is in charge of decoding the image data of a BAM file
+ * so that the output can be used to render it in a HTMLCanvas
+ * or any other file format (like BMP).
+ *
+ * Info on BAM files: https://gibberlings3.github.io/iesdp/file_formats/ie_formats/bam_v1.htm
+ *
+ * @param locator image locator for the frame that is to be processed.
+ * @param palette color palette for the image, each pixel in the image is stored as an
+ * index of the palette. Thus, if pixel0's values is 9, it means is using the palette[9] color.
+ * @param frame frame metadata like size, offsets, etc
+ * @param bitmapMode see the documentation for BitmapMode type. It modifies the output so it can
+ * be used to feed a HTMLCanvas (RGBA) or a bitmap file (ABGR).
+ */
 function processFrame(
   locator: BamV1ImageLocator,
   palette: BamPalette,
   frame: BamFrame,
   bitmapMode: BitmapMode
 ): ImageData {
-  const bifFile = locator.bif._buffer;
-  const originalBufferOffset = bifFile.readOffset;
+  const bifFile = SmartBuffer.fromBuffer(locator.buffer);
   const readByte = (): number => bifFile.readBuffer(1)[0];
 
   const frameDataOffset = frame.frameDataOffset & 0x7fffffff;
   const isCompressed = !(frame.frameDataOffset & 0x80000000);
 
-  bifFile.readOffset = locator.entry.offset + frameDataOffset;
+  bifFile.readOffset = locator.offsetToBAM + frameDataOffset;
 
   const transparentPaletteIndex = locator.header.transparentIndex;
   const pixelCount = frame.width * frame.height;
@@ -415,8 +463,6 @@ function processFrame(
     },
     [] as number[]
   );
-
-  bifFile.readOffset = originalBufferOffset;
 
   return {
     data: Uint8ClampedArray.from(imageRawData),

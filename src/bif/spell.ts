@@ -38,12 +38,12 @@ export type SpellDefinition = {
 };
 
 export function parseSpellEntry(
-  index: BifIndex,
+  bifIndex: BifIndex,
   spellEntry: EntityFileEntry
 ): Promise<SpellDefinition> {
   return new Promise((resolve) => {
-    index._buffer.readOffset = spellEntry.offset;
-    const b = index._buffer;
+    const b = SmartBuffer.fromBuffer(bifIndex.buffer);
+    b.readOffset = spellEntry.offset;
 
     const spellDef = {
       signature: b.readString(4),

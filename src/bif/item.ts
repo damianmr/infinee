@@ -1,5 +1,6 @@
 import { unpad } from '../util/legacyFilenamePadding';
 import { BifIndex, EntityFileEntry } from './infBifFile';
+import { SmartBuffer } from 'smart-buffer';
 
 export type ItemDefinition = {
   signature: string;
@@ -38,12 +39,12 @@ export type ItemDefinition = {
 };
 
 export function parseItemEntry(
-  index: BifIndex,
+  bifIndex: BifIndex,
   itemEntry: EntityFileEntry
 ): Promise<ItemDefinition> {
   return new Promise((resolve) => {
-    index._buffer.readOffset = itemEntry.offset;
-    const b = index._buffer;
+    const b = SmartBuffer.fromBuffer(bifIndex.buffer);
+    b.readOffset = itemEntry.offset;
 
     const itemDef: ItemDefinition = {
       signature: b.readString(4),

@@ -42,7 +42,7 @@ export type BifIndex = {
   id: string;
   header: BifHeader;
   entities: EntriesIndex;
-  _buffer: SmartBuffer;
+  buffer: Buffer;
 };
 
 /**
@@ -93,7 +93,7 @@ function buildFileIndex(biffBuffer: Buffer, indexName: string): BifIndex {
   }
 
   return {
-    _buffer: r,
+    buffer: r.toBuffer(),
     entities,
     header,
     id: indexName
