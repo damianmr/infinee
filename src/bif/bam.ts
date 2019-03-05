@@ -86,6 +86,40 @@ export type BamV1Image = {
   image: ImageData;
 };
 
+/**
+ * Specifies the way in which pixels of a BAM image will be decomposed
+ * into red, green, blue and alpha values.
+ *
+ * HTMLCanvas API supports RGBA mode, whereas bitmap libraries usually
+ * use ABGR.
+ *
+ * Each pixel of a BAM image is stored as an index in the palette that
+ * should be used for that pixel, thus, each pixel has the following form:
+ *
+ * pixel0 = palette[0 < someIndex <= 255]
+ * .
+ * .
+ * .
+ * pixelN = palette[0 < someIndex <= 255]
+ *
+ * While reading that information, the algorithm that makes this processing
+ * also converts each pixel into a 4 array representation, becoming something
+ * like
+ *
+ * pixel0 = [r, g, b, a] // or [a, b, g, r] based on the specified mode
+ * .
+ * .
+ * .
+ * pixel1 = [r, g, b, a] // or [a, b, g, r]
+ *
+ * This is later turned into a flat array which looks like this:
+ *
+ * [pixel0r, pixel0g, pixel0b, pixel0a, ..., pixelNr, pixelNg, pixelNb, pixelNa]
+ *
+ * This array can be used to render the image by different meanings. In testing,
+ * we export to BMP and check the results. In a web context, a HTMLCanvas will be
+ * better.
+ */
 export type BitmapMode = 'RGBA' | 'ABGR';
 
 type BamV1CompressedHeader = {
