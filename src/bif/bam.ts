@@ -8,7 +8,7 @@ import { BifIndex, EntityFileEntry } from './infBifFile';
 
 /**
  * Describes the header of a BAM image. With this
- * information, we can look up for the original image data
+ * information, we can look up the original image data
  * in a BIF file.
  */
 export type BamV1Header = {
@@ -135,7 +135,7 @@ export type BamV1Image = {
  * pixelN = palette[0 < someIndex <= 255]
  *
  * While reading that information, the algorithm that makes this processing
- * also converts each pixel into a 4 array representation, becoming something
+ * also converts each pixel into a 4 elements array representation, becoming something
  * like
  *
  * pixel0 = [r, g, b, a] // or [a, b, g, r] based on the specified mode
@@ -162,7 +162,7 @@ type BamFrame = {
   height: number;
   centerX: number;
   centerY: number;
-  /** Where in the file where the frame is stored is the image data for this frame. */
+  /** Offset to the image data in the file where this frame is stored */
   frameDataOffset: number;
 };
 
