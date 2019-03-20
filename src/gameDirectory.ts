@@ -53,21 +53,21 @@ function validateBasicIntegrity(
       return /chitin\.key$/.test(entryPath); // ends with 'chitin.key'
     });
     if (!existsChitinFile) {
-      throw new Error('Failed to find missing chitin.key file');
+      throw new Error('Failed to find chitin.key file');
     }
 
     const existsDataDir = keys.find((entryPath: string) => {
       return /data\/.+\..{3}$/.test(entryPath); // ends with 'data/<something>.<char3Extension>'
     });
     if (!existsDataDir) {
-      throw new Error('Failed to find missing data directory');
+      throw new Error('Failed to find data directory');
     }
 
     const existsDialogFile = keys.find((entryPath: string) => {
       return /dialogf?\.tlk$/.test(entryPath); // ends with 'dialog[f].tlk'
     });
     if (!existsDialogFile) {
-      throw new Error('Failed to find missing dialog.tlk or dialogf.tlk file');
+      throw new Error('Failed to find dialog.tlk or dialogf.tlk file');
     }
 
     resolve(dirStruct);
