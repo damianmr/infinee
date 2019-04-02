@@ -17,6 +17,7 @@
     "@types/node": "^10.12.18",
     "@types/pako": "^1.0.0",
     "@types/react": "^16.8.10",
+    "@types/react-dom": "^16.8.3",
     "blob-to-buffer": "^1.2.8",
     "bmp-js": "^0.1.0",
     "chai": "^4.2.0",
@@ -25,11 +26,18 @@
     "pako": "^1.0.10",
     "parcel-bundler": "^1.11.0",
     "react": "^16.8.6",
+    "react-dom": "^16.8.6",
     "smart-buffer": "^4.0.1",
+    "styled-components": "^4.2.0",
+    "tachyons": "^4.11.1",
     "ts-node": "^7.0.1",
     "tslint": "^5.12.0",
     "tslint-config-prettier": "^1.17.0",
+    "tslint-react": "^4.0.0",
+    "tslint-react-hooks": "^2.0.0",
     "typescript": "^3.2.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@types/styled-components": "^4.1.12"
+  }
 }
