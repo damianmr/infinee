@@ -1,0 +1,10 @@
+@import '../../node_modules/tachyons/css/tachyons.css';
+
+/*
+  For the most part this file should be empty. Tachyons is imported
+  to allow the UI components use CSS classes that speed up the styling
+  process, but all these class names are atomic, they don't modify
+  the global styles. This is only partially true, though, as there's a
+  'normalize.css' module in Tachyons, which kind of resets all basic
+  browser's styles, but we do want these.
+*/

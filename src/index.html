@@ -1,27 +1,10 @@
+<!doctype html>
 <html>
-<body style="font-family: sans-serif">
-  <div
-    id="folderDropArea"
-    style="position: relative; height: 80px; border: 2px dashed black; text-align: center;"
-  >
-    <div style="transform: translateY(-50%);top: 50%;width: 100%;position: absolute;">Drop your Baldurs Gate II (EE) folder here.</div>
-  </div>
-  <div style="margin: 10px 0;">
-    <select id="resourceType">
-      <option selected>Pick one</option>
-    </select>
-    <select id="resourceName">
-      <option selected>Pick one</option>
-    </select>
-  </div>
-  <div id="resInfo" style="width: 500px; border: 3px solid black; padding: 10px; margin: 10px 0;">
-
-  </div>
-  <script type='x/template' id="resInfoTempl">
-    <div>Resource Name: {name} </div>
-    <div>Resource Locator: {locator} </div>
-  </script>
-  <script type='x/template' id="resOptTempl"><option value="{value}">{name}</option></script>
-  <script src="./index.ts"></script>
-</body>
+  <head>
+    <link rel="stylesheet" href="/ui/globals.css" />
+  </head>
+  <body>
+    <div id='root'></div>
+    <script src="./ui/Main.tsx"></script>
+  </body>
 </html>
