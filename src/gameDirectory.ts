@@ -13,7 +13,7 @@ export type GameFolder = {
   matcher: EntryMatcher;
 };
 
-function newGameFolder(folder: DirectoryEntry, matcher: EntryMatcher) {
+function newGameFolder(folder: DirectoryEntry, matcher: EntryMatcher): GameFolder {
   if (!folder.isDirectory) {
     throw new Error(`Folder ${folder.name} is not a directory.`);
   }
