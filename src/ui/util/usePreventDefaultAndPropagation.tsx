@@ -24,7 +24,7 @@ export default function usePreventDefaultAndPropagation(
 ): EventListener {
   function preventDefaultAndPropagation(e: Event): void {
     e.preventDefault();
-    e.stopPropagation();
+    // e.stopPropagation();
   }
 
   useEffect(() => {
