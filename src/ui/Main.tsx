@@ -12,6 +12,7 @@ const InfinEE = () => {
   return (
     <Main>
       <GameFolderDropZone />
+      <h1>This is in the index page. More info to come soon.</h1>
     </Main>
   );
 };
