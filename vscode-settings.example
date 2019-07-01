@@ -1,0 +1,10 @@
+// Add this to your VSCode user settings to enable ESLint on TypeScript files.
+// NOTE Rememeber to download ESLint plugin first.
+{
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    { "language": "typescript", "autoFix": true },
+    { "language": "typescriptreact", "autoFix": true }
+  ]
+}

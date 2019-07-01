@@ -11,10 +11,7 @@ import {
 import {
   DirectoryEntryMock,
   DirectoryReaderMock,
-  EntryMock,
-  FileEntryMock,
   FileMock,
-  MOCK_FILESYSTEM_ROOT
 } from './mocks/fileSystem';
 import { mockDirStruct } from './mocks/fileSystemUtil';
 
@@ -30,7 +27,7 @@ describe('directory.ts', () => {
         'subfolderVisible/thisFolderIsInvisible',
         'visible.jpg'
       ]);
-      readDirContents(mockFolder).then(({ entries, directory }) => {
+      readDirContents(mockFolder).then(({ entries/*, directory */}) => {
         expect(entries.length).to.be.equal(3);
         expect(entries[0].name).to.be.eql('entry1.gif');
         expect(entries[1].name).to.be.eql('subfolderVisible');
@@ -47,7 +44,7 @@ describe('directory.ts', () => {
         'entry2.jpg',
         'entry3.png'
       ]);
-      readDirContents(mockFolder).then(({ entries, directory }) => {
+      readDirContents(mockFolder).then(({ entries/*, directory */}) => {
         expect(entries.length).to.be.equal(5);
         expect(entries[0].name).to.be.eql('entry1.gif');
         expect(entries[1].name).to.be.eql('subfolder1');
@@ -77,7 +74,7 @@ describe('directory.ts', () => {
 
       const path = (x: string) => `${mockFolder.fullPath}/${x}`;
 
-      buildDirectoryStructure(mockFolder, (x: Entry) => true).then(
+      buildDirectoryStructure(mockFolder, (/*x: Entry*/) => true).then(
         (flatStruct: FlatDirectoryStructureAsEntries) => {
           expect(flatStruct[path('entry1.jpg')]).to.be.equal(mockFolder.entries[0]);
 
@@ -118,7 +115,7 @@ describe('directory.ts', () => {
 
       const path = (x: string) => `${mockFolder.fullPath}/${x}`;
 
-      buildDirectoryStructure(mockFolder, (x: Entry) => true)
+      buildDirectoryStructure(mockFolder, (/*x: Entry*/) => true)
         .then(createFilePointers)
         .then((dirStruct: FlatDirectoryStructure) => {
           let f = dirStruct[path('entry1.jpg')];

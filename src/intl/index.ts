@@ -1,9 +1,12 @@
 import { LanguageCode } from '../constants';
+// eslint-disable-next-line @typescript-eslint/camelcase
 import en_US from './locales/en_US';
 
 let locale: LanguageCode = 'en_US';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const i18n: { [id: string]: any } = {
+  // eslint-disable-next-line @typescript-eslint/camelcase
   en_US
 };
 

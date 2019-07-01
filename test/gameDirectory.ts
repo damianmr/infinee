@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import 'mocha';
 import { FlatDirectoryStructure } from '../src/directory';
 import { loadGameFolder, SupportedGameFolders } from '../src/gameDirectory';
-import { FileEntryMock, MOCK_FILESYSTEM_ROOT } from './mocks/fileSystem';
+import { FileEntryMock } from './mocks/fileSystem';
 import { mockDirStruct } from './mocks/fileSystemUtil';
 
 chai.use(chaiAsPromised);
@@ -64,15 +64,14 @@ describe('gameDirectory.ts', () => {
     });
   
     it('removes unnecesary prefix parts from the paths', (done) => {
-      const removedParth = `${MOCK_FILESYSTEM_ROOT.name}/bg2ee`;
       loadGameFolder(
         SupportedGameFolders.BG2EE(
           mockDirStruct('bg2ee', ['chitin.key', 'data/some.bif', 'lang/de_DE/dialog.tlk'])
         )
       ).then((gameDir: FlatDirectoryStructure) => {
-        expect(gameDir['chitin.key']).not.to.be.undefined; // tslint:disable-line:no-unused-expression
-        expect(gameDir['data/some.bif']).not.to.be.undefined; // tslint:disable-line:no-unused-expression
-        expect(gameDir['lang/de_DE/dialog.tlk']).not.to.be.undefined; // tslint:disable-line:no-unused-expression
+        expect(gameDir['chitin.key']).not.to.be.undefined;
+        expect(gameDir['data/some.bif']).not.to.be.undefined;
+        expect(gameDir['lang/de_DE/dialog.tlk']).not.to.be.undefined;
         done();
       });
     });

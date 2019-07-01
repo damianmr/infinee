@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "tslint-check": "tslint-config-prettier-check ./tslint.json",
+    "lint": "eslint . --ext .ts,.tsx",
     "test": "tsc -p ./ && mocha -r ts-node/register test/**/**/*.ts",
     "dev": "parcel src/index.html",
     "build": "parcel build src/index.html"
@@ -19,10 +19,14 @@
     "@types/react": "^16.8.10",
     "@types/react-dom": "^16.8.3",
     "@types/styled-components": "4.1.8",
+    "@typescript-eslint/eslint-plugin": "^1.11.0",
+    "@typescript-eslint/parser": "1.11.0",
     "blob-to-buffer": "^1.2.8",
     "bmp-js": "^0.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "eslint": "^6.0.1",
+    "eslint-plugin-react": "^7.14.2",
     "mocha": "^5.2.0",
     "pako": "^1.0.10",
     "parcel-bundler": "^1.11.0",
@@ -32,12 +36,7 @@
     "styled-components": "^4.2.0",
     "tachyons": "^4.11.1",
     "ts-node": "^7.0.1",
-    "tslint": "^5.12.0",
-    "tslint-config-prettier": "^1.17.0",
-    "tslint-react": "^4.0.0",
-    "tslint-react-hooks": "^2.0.0",
     "typescript": "^3.2.2"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }

@@ -88,7 +88,7 @@ export type GameResourceIndex = {
   resources_: ResourceMap;
 };
 
-function resourceInfoKey(a: string | ResourceInfo, b?: ResourceTypeID): any {
+function resourceInfoKey(a: string | ResourceInfo, b?: ResourceTypeID): string {
   if (typeof a === 'string' && typeof b === 'number') {
     return `${unpad(a)}_${b}`.toLowerCase();
   } else if (typeof a !== 'string' && a.name && a.resourceType) {

@@ -14,7 +14,7 @@
  * @param charCount how many 'slots' this string should have.
  */
 export function pad(stringToPad: string, charCount: number): string {
-  let aux: any = stringToPad;
+  let aux: string = stringToPad;
   if (stringToPad.length < charCount) {
     for (let i = stringToPad.length; i < charCount; i++) {
       aux += '\u0000';

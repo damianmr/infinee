@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import {loadGameFolder, SupportedGameFolders} from '../gameDirectory';
-import getAsEntry from '../util/getAsEntry';
-import log from '../util/log';
+// import {loadGameFolder, SupportedGameFolders} from '../gameDirectory';
+// import getAsEntry from '../util/getAsEntry';
+// import log from '../util/log';
 import usePreventDefaultAndPropagation from './util/usePreventDefaultAndPropagation';
 
 type DropAreaType = { isDraggingSomething?: boolean };
@@ -51,7 +51,7 @@ export default function GameFolderDropZone() {
     event.stopPropagation();
   }
 
-  function onDragLeave(e: any) {
+  function onDragLeave() {
     setDraggingOverWindow(false);
   }
 

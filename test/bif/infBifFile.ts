@@ -1,10 +1,10 @@
 import { encode as encodeBMP } from 'bmp-js';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { readFileSync, writeFile, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { BamV1Header, BamV1Image, BamV1ImageLocator, getLastProcessedFrameDebugInfo} from '../../src/bif/bam';
+import { BamV1Header, BamV1Image, BamV1ImageLocator } from '../../src/bif/bam';
 import {
   BifIndex,
   getBam,
@@ -89,6 +89,7 @@ describe('infBifFile.ts', () => {
 
     it('parsing a known item', async () => {
       const resourceInfo = findResourceInfo(gameResourceIndex, 'AROW10', ResourceTypeID.ITM);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const bifEntityEntry = getEntityEntry({
         index: itemsIndex,
         resourceInfo
@@ -101,6 +102,7 @@ describe('infBifFile.ts', () => {
 
     it('returned items do not have NULL terminated strings', async () => {
       const resourceInfo = findResourceInfo(gameResourceIndex, 'AROW10', ResourceTypeID.ITM);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const bifEntityEntry = getEntityEntry({
         index: itemsIndex,
         resourceInfo
@@ -115,6 +117,7 @@ describe('infBifFile.ts', () => {
     it('parsing a known spell', async () => {
       const FREEDOM_SPELL = 'cdwi917a';
       const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const bifEntityEntry = getEntityEntry({
         index: spellsIndex,
         resourceInfo
@@ -127,6 +130,7 @@ describe('infBifFile.ts', () => {
     it('returned spells do not have NULL terminated strings', async () => {
       const FREEDOM_SPELL = 'cdwi917a';
       const resourceInfo = findResourceInfo(gameResourceIndex, FREEDOM_SPELL, ResourceTypeID.SPL);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const bifEntityEntry = getEntityEntry({
         index: spellsIndex,
         resourceInfo
@@ -225,6 +229,7 @@ describe('infBifFile.ts', () => {
       it('creates frame header data properly (uncompressed BAMs)', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const bifEntity = getEntityEntry({
           index: bamsIndex,
           resourceInfo
@@ -255,6 +260,7 @@ describe('infBifFile.ts', () => {
       it('can create bitmaps out of a BAM file (uncompressed)', async () => {
         const TEST_BAM = 'iplot01f';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const bifEntity = getEntityEntry({
           index: bamsIndex,
           resourceInfo
@@ -276,6 +282,7 @@ describe('infBifFile.ts', () => {
       it('can create bitmaps out of a BAM file (compressed)', async () => {
         const TEST_BAM = 'iplat20';
         const resourceInfo = findResourceInfo(gameResourceIndex, TEST_BAM, ResourceTypeID.BAM);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const bifEntity = getEntityEntry({
           index: bamsIndex,
           resourceInfo

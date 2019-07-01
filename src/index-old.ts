@@ -2,7 +2,6 @@
 import {
   BifIndex,
   getBam,
-  getEntityEntry,
   getFilesIndex as getFilesIndexInBIF,
   getItem
 } from './bif/infBifFile';
@@ -106,7 +105,7 @@ function handleDropsInFolderArea() {
         gi = gameIndex;
         return getAllResources(gameIndex);
       })
-      .then((resources: ResourceInfo[]) => {
+      .then((/*resources: ResourceInfo[]*/) => {
         for (const type of IndexableResourceTypes) {
           const rType = t(`resourceType.${type}`);
           templ(

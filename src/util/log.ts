@@ -8,6 +8,7 @@
 function emitMessage(
   type: 'error' | 'warn' | 'info' | 'log' | 'debug',
   message: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details: any[]
 ): void {
   if (details.length > 0) {
@@ -17,22 +18,27 @@ function emitMessage(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function log(message?: any, ...details: any[]): void {
   emitMessage('log', message, details);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function error(message?: any, ...details: any[]): void {
   emitMessage('error', message, details);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function warn(message?: any, ...details: any[]): void {
   emitMessage('warn', message, details);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function info(message?: any, ...details: any[]): void {
   emitMessage('info', message, details);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function debug(message?: any, ...details: any[]): void {
   emitMessage('debug', message, details);
 }

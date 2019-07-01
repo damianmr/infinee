@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Mock FileSystem API implementation.
  *
@@ -19,9 +20,6 @@
  * allow the reading of those.
  */
 
-// tslint:disable:max-classes-per-file
-export let MOCK_FILESYSTEM_ROOT: DirectoryEntryMock;
-
 export class EntryMock implements Entry {
   public isFile: boolean;
 
@@ -33,6 +31,7 @@ export class EntryMock implements Entry {
 
   public filesystem: FileSystem;
 
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   constructor({ isFile, name, fullPath }: { isFile: boolean; name: string; fullPath: string }) {
     this.isFile = isFile;
     this.isDirectory = !isFile;
@@ -73,7 +72,10 @@ export class EntryMock implements Entry {
     throw new Error('Method not implemented.');
   }
 
-  public remove(successCallback: VoidCallback, errorCallback?: ErrorCallback | undefined): void {
+  public remove(
+    successCallback: VoidCallback,
+    errorCallback?: ErrorCallback | undefined
+  ): void {
     throw new Error('Method not implemented.');
   }
 
@@ -96,6 +98,7 @@ export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
    */
   public lastReader?: DirectoryReaderMock;
 
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   constructor({
     name,
     fullPath,
@@ -141,6 +144,7 @@ export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
 }
 
 export class FileEntryMock extends EntryMock implements FileEntry {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   constructor({ name, fullPath }: { name: string; fullPath: string }) {
     super({ isFile: true, name, fullPath });
   }
@@ -171,6 +175,7 @@ export class DirectoryReaderMock implements DirectoryReader {
 
   private entries: EntryMock[];
 
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   constructor(entries: EntryMock[]) {
     this.entries = entries;
     this.batchCount = 0;
@@ -211,6 +216,7 @@ export class FileMock implements File {
   public size: number;
   public type: string;
 
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   constructor(name: string) {
     this.name = name;
     this.lastModified = Date.now();
@@ -227,7 +233,7 @@ export class FileMock implements File {
   }
 }
 
-MOCK_FILESYSTEM_ROOT = new DirectoryEntryMock({
+export const MOCK_FILESYSTEM_ROOT: DirectoryEntryMock = new DirectoryEntryMock({
   fullPath: '/mockFileSystem',
   name: 'mockFileSystem'
 });

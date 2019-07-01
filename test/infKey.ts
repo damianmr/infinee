@@ -155,7 +155,7 @@ describe('infKey.ts', () => {
 
       it('it should throw if nothing is found', () => {
         expect(() => {
-          const itemsEntry: BifEntry = findBifEntry(gameResourceIndex, 'hello');
+          findBifEntry(gameResourceIndex, 'hello');
         }).to.throw(/not found/);
       });
 

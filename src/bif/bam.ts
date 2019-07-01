@@ -1,4 +1,4 @@
-import { inflateRaw, ungzip } from 'pako';
+import { ungzip } from 'pako';
 import { SmartBuffer } from 'smart-buffer';
 import { unpad } from '../util/legacyFilenamePadding';
 import { addAlpha, intToRGB } from '../util/rgba';
@@ -62,10 +62,10 @@ type BamV1CompressedHeader = {
 type UncompressedBamV1 = {
 
   /** Header of the compressed file */
-  header: BamV1CompressedHeader,
+  header: BamV1CompressedHeader;
 
   /** Uncompressed contents file */
-  contents: Buffer
+  contents: Buffer;
 }
 
 /**
@@ -204,7 +204,7 @@ export function parseBamEntry(
 
     if (signature === 'BAMC') {
       const uncompressedBam: UncompressedBamV1 = uncompressV1Bam(index, bamEntry);
-      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam.contents, bamEntry);
+      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam.contents/*, bamEntry*/);
       resolve({
         bamSize: uncompressedBam.header.uncompressedDataLength,
         buffer: uncompressedBam.contents,
@@ -215,7 +215,7 @@ export function parseBamEntry(
       throw new Error('BAM V2 files are not supported.');
     } else {
       b.readOffset = bamEntry.offset;
-      const bamHeader: BamV1Header = parseV1BamHeader(b.readBuffer(), bamEntry);
+      const bamHeader: BamV1Header = parseV1BamHeader(b.readBuffer()/*, bamEntry*/);
       resolve({
         bamSize: bamEntry.size,
         buffer: index.buffer,
@@ -226,7 +226,7 @@ export function parseBamEntry(
   });
 }
 
-function parseV1BamHeader(bamFile: Buffer, bamEntry: EntityFileEntry): BamV1Header {
+function parseV1BamHeader(bamFile: Buffer/*, bamEntry: EntityFileEntry*/): BamV1Header {
   const b = SmartBuffer.fromBuffer(bamFile);
 
   const signature = unpad(b.readString(4));
