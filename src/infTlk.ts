@@ -45,9 +45,11 @@ function buildDialogsTable(fileBuffer: Buffer): EmptyDialogsTable {
   };
 
   if (fileHeader.signature.indexOf(FILE_SIGNATURE) !== 0) {
-    throw new Error(
-      `Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${fileHeader.signature}" instead.`
-    );
+    const errorMessage = [
+      'Unrecognized file signature. ',
+      `Expected "${FILE_SIGNATURE}", got "${fileHeader.signature}" instead.`
+    ];
+    throw new Error(errorMessage.join(''));
   }
 
   const dialogs = [];
@@ -67,7 +69,10 @@ function buildDialogsTable(fileBuffer: Buffer): EmptyDialogsTable {
   return Object.assign({}, fileHeader, { dialogs });
 }
 
-function populateDialogsTable(dialogsFileContents: Buffer, dI: EmptyDialogsTable): PopulatedDialogsTable {
+function populateDialogsTable(
+  dialogsFileContents: Buffer,
+  dI: EmptyDialogsTable
+): PopulatedDialogsTable {
   const r = SmartBuffer.fromBuffer(dialogsFileContents);
   const dialogs: PopulatedDialogEntry[] = [];
   for (let i = 0; i < dI.stringsCount; i++) {

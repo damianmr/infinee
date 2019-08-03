@@ -20,18 +20,6 @@ export function buildFileEntry(name: string, parentDir?: DirectoryEntryMock): Fi
   });
 }
 
-export function mockDirStruct(rootName: string, routes: string[]) {
-  const rootDir = new DirectoryEntryMock({
-    fullPath: `${MOCK_FILESYSTEM_ROOT.fullPath}/${rootName}`,
-    name: rootName
-  });
-  for (const route of routes) {
-    buildDirRoute(rootDir, route);
-  }
-
-  return rootDir;
-}
-
 /**
  * WARNING! NOT A PURE FUNCTION! Modifies the given DirectoryEntryMock!
  */
@@ -58,17 +46,33 @@ function buildDirRoute(dir: DirectoryEntryMock, route: string) {
         );
       }
     } else {
+      const parentFullPath = parentDir.fullPath;
       // look up for existent folder
       const existentDir = parentDir.entries.find(
-        (e: EntryMock) => e.isDirectory && e.fullPath === `${parentDir.fullPath}/${part}`
+        (e: EntryMock) => e.isDirectory && e.fullPath === `${parentFullPath}/${part}`
       );
       if (existentDir) {
         parentDir = existentDir as DirectoryEntryMock;
       } else {
-        const newEntry = new DirectoryEntryMock({ name: part, fullPath: `${parentDir.fullPath}/${part}` });
+        const newEntry = new DirectoryEntryMock({
+          name: part,
+          fullPath: `${parentFullPath}/${part}`
+        });
         parentDir.entries.push(newEntry);
         parentDir = newEntry;
       }
     }
   }
+}
+
+export function mockDirStruct(rootName: string, routes: string[]) {
+  const rootDir = new DirectoryEntryMock({
+    fullPath: `${MOCK_FILESYSTEM_ROOT.fullPath}/${rootName}`,
+    name: rootName
+  });
+  for (const route of routes) {
+    buildDirRoute(rootDir, route);
+  }
+
+  return rootDir;
 }

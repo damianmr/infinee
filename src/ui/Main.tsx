@@ -6,6 +6,7 @@ import GameFolderDropZone from './GameFolderDropZone';
 const Main = styled.main.attrs({
   className: 'lh-solid tc helvetica'
 })`
+  color: inherit;
 `;
 
 const InfinEE = () => {

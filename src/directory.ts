@@ -41,7 +41,7 @@ export function buildDirectoryStructure(
 ): Promise<FlatDirectoryStructureAsEntries> {
   const dirStructure: FlatDirectoryStructureAsEntries = {};
 
-  return new Promise((resolveEverything/*, rejectEverything */) => {
+  return new Promise((resolveEverything /*, rejectEverything */) => {
     const readDir = (dir: DirectoryEntry): Promise<FlatDirectoryStructureAsEntries> => {
       const subDirsPromises: Promise<FlatDirectoryStructureAsEntries>[] = [];
 

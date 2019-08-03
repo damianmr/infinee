@@ -9,7 +9,6 @@ type FutureProofDataTransferItem = DataTransferItem & { getAsEntry?: () => void 
 export default function getAsEntry(transferItem: FutureProofDataTransferItem) {
   if (transferItem.getAsEntry) {
     return transferItem.getAsEntry();
-  } else {
-    return transferItem.webkitGetAsEntry();
   }
+  return transferItem.webkitGetAsEntry();
 }

@@ -20,6 +20,54 @@
  * allow the reading of those.
  */
 
+export class DirectoryReaderMock implements DirectoryReader {
+  /**  used to simulate the "batch" read of #readEntries */
+  public static MAX_BATCH_SIZE: number = 2;
+
+  /**
+   * Keeps track of how many batches were returned during the iteration over the entries.
+   * Only needed to assert on this value and check that code making use of #readEntries method
+   * is properly iterating enough times to get all the entries in the reader.
+   */
+  public batchCount: number;
+
+  private entries: EntryMock[];
+
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  constructor(entries: EntryMock[]) {
+    this.entries = entries;
+    this.batchCount = 0;
+  }
+
+  /**
+   * Mock implementation of readEntries.
+   *
+   * The real one returns entries in batches, whose size is, as the time of writting this commment, limited
+   * to 100 entries. As this size is a bit inconvenient to test (I would need to create more than 100 mock
+   * entries) I defined the size of these batches in a constant. User of this API should
+   * not see their code affected by this.
+   */
+  public readEntries(
+    successCallback: EntriesCallback,
+    errorCallback?: ErrorCallback | undefined
+  ): void {
+    const max = DirectoryReaderMock.MAX_BATCH_SIZE;
+    setTimeout(() => {
+      const nextBatch = this.entries.slice(0, max);
+      const entriesLeft = this.entries.slice(max);
+      successCallback(nextBatch);
+      if (nextBatch.length !== 0) {
+        this.batchCount += 1;
+      }
+      if (nextBatch.length < max) {
+        this.entries = [];
+      } else {
+        this.entries = entriesLeft;
+      }
+    }, 1);
+  }
+}
+
 export class EntryMock implements Entry {
   public isFile: boolean;
 
@@ -39,6 +87,7 @@ export class EntryMock implements Entry {
     this.fullPath = fullPath;
     this.filesystem = {
       name: 'mockFileSystem',
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
       root: MOCK_FILESYSTEM_ROOT
     };
   }
@@ -72,10 +121,7 @@ export class EntryMock implements Entry {
     throw new Error('Method not implemented.');
   }
 
-  public remove(
-    successCallback: VoidCallback,
-    errorCallback?: ErrorCallback | undefined
-  ): void {
+  public remove(successCallback: VoidCallback, errorCallback?: ErrorCallback | undefined): void {
     throw new Error('Method not implemented.');
   }
 
@@ -143,72 +189,10 @@ export class DirectoryEntryMock extends EntryMock implements DirectoryEntry {
   }
 }
 
-export class FileEntryMock extends EntryMock implements FileEntry {
-  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  constructor({ name, fullPath }: { name: string; fullPath: string }) {
-    super({ isFile: true, name, fullPath });
-  }
-
-  public createWriter(
-    successCallback: FileWriterCallback,
-    errorCallback?: ErrorCallback | undefined
-  ): void {
-    throw new Error('Method not implemented.');
-  }
-  public file(successCallback: FileCallback, errorCallback?: ErrorCallback | undefined): void {
-    setTimeout(() => {
-      successCallback(new FileMock(this.fullPath));
-    }, 1);
-  }
-}
-
-export class DirectoryReaderMock implements DirectoryReader {
-  /**  used to simulate the "batch" read of #readEntries */
-  public static MAX_BATCH_SIZE: number = 2;
-
-  /**
-   * Keeps track of how many batches were returned during the iteration over the entries.
-   * Only needed to assert on this value and check that code making use of #readEntries method
-   * is properly iterating enough times to get all the entries in the reader.
-   */
-  public batchCount: number;
-
-  private entries: EntryMock[];
-
-  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
-  constructor(entries: EntryMock[]) {
-    this.entries = entries;
-    this.batchCount = 0;
-  }
-
-  /**
-   * Mock implementation of readEntries.
-   *
-   * The real one returns entries in batches, whose size is, as the time of writting this commment, limited
-   * to 100 entries. As this size is a bit inconvenient to test (I would need to create more than 100 mock
-   * entries) I defined the size of these batches in a constant. User of this API should
-   * not see their code affected by this.
-   */
-  public readEntries(
-    successCallback: EntriesCallback,
-    errorCallback?: ErrorCallback | undefined
-  ): void {
-    const max = DirectoryReaderMock.MAX_BATCH_SIZE;
-    setTimeout(() => {
-      const nextBatch = this.entries.slice(0, max);
-      const entriesLeft = this.entries.slice(max);
-      successCallback(nextBatch);
-      if (nextBatch.length !== 0) {
-        this.batchCount += 1;
-      }
-      if (nextBatch.length < max) {
-        this.entries = [];
-      } else {
-        this.entries = entriesLeft;
-      }
-    }, 1);
-  }
-}
+export const MOCK_FILESYSTEM_ROOT: DirectoryEntryMock = new DirectoryEntryMock({
+  fullPath: '/mockFileSystem',
+  name: 'mockFileSystem'
+});
 
 export class FileMock implements File {
   public lastModified: number;
@@ -233,7 +217,21 @@ export class FileMock implements File {
   }
 }
 
-export const MOCK_FILESYSTEM_ROOT: DirectoryEntryMock = new DirectoryEntryMock({
-  fullPath: '/mockFileSystem',
-  name: 'mockFileSystem'
-});
+export class FileEntryMock extends EntryMock implements FileEntry {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  constructor({ name, fullPath }: { name: string; fullPath: string }) {
+    super({ isFile: true, name, fullPath });
+  }
+
+  public createWriter(
+    successCallback: FileWriterCallback,
+    errorCallback?: ErrorCallback | undefined
+  ): void {
+    throw new Error('Method not implemented.');
+  }
+  public file(successCallback: FileCallback, errorCallback?: ErrorCallback | undefined): void {
+    setTimeout(() => {
+      successCallback(new FileMock(this.fullPath));
+    }, 1);
+  }
+}

@@ -300,7 +300,6 @@ describe('infBifFile.ts', () => {
         // writeFileSync('./debug.json', debugInfo);
         writeFileSync(`./test/output/${TEST_BAM}.bmp`, bmpRaw.data);
       });
-
     });
   });
 });
