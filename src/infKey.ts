@@ -93,9 +93,8 @@ function resourceInfoKey(a: string | ResourceInfo, b?: ResourceTypeID): string {
     return `${unpad(a)}_${b}`.toLowerCase();
   } else if (typeof a !== 'string' && a.name && a.resourceType) {
     return `${unpad(a.name)}_${a.resourceType}`.toLowerCase();
-  } else {
-    throw new Error(`Invalid arguments for resourceInfoKey. 1st arg: "${a}", 2nd arg: "${b}"`);
   }
+  throw new Error(`Invalid arguments for resourceInfoKey. 1st arg: "${a}", 2nd arg: "${b}"`);
 }
 
 function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
@@ -111,11 +110,11 @@ function buildGameIndex(fileBuffer: Buffer): GameResourceIndex {
   };
 
   if (header.signature.indexOf(FILE_SIGNATURE) !== 0) {
-    throw new Error(
-      `Unrecognized file signature. Expected "${FILE_SIGNATURE}", got "${
-        header.signature
-      }" instead.`
-    );
+    const errorMessage = [
+      'Unrecognized file signature.',
+      ` Expected "${FILE_SIGNATURE}", got ${header.signature} instead.`
+    ];
+    throw new Error(errorMessage.join(''));
   }
 
   r.readOffset = header.bifOffset;
@@ -213,11 +212,12 @@ export function findBifForResource(
 ): BifEntry {
   const entry = gameResourceIndex.bifResources[resInfo.bifKeyIndex];
   if (!entry) {
-    throw new Error(
-      `Cannot find BIF entry for resource type "${resInfo.resourceType}" with name "${
-        resInfo.name
-      }" at index "${resInfo.bifKeyIndex}"`
-    );
+    const errorMessage = [
+      'Cannot find BIF entry for resource type ',
+      `"${resInfo.resourceType}" with name "${resInfo.name}" at `,
+      `index "${resInfo.bifKeyIndex}"`
+    ];
+    throw new Error(errorMessage.join(''));
   }
   return entry;
 }

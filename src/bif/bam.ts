@@ -57,16 +57,15 @@ type BamV1CompressedHeader = {
 
   /** Length of the uncompressed contents */
   uncompressedDataLength: number;
-}
+};
 
 type UncompressedBamV1 = {
-
   /** Header of the compressed file */
   header: BamV1CompressedHeader;
 
   /** Uncompressed contents file */
   contents: Buffer;
-}
+};
 
 /**
  * Holds all the information that is required to have access
@@ -182,51 +181,7 @@ type DebugPixel = {
   pixelIndex: number;
 };
 
-/**
- * Parses a given EntityFileEntry as a BAM file, returning the header which can
- * be used to find a given image in such file.
- *
- * Returns a promise with a BamV1ImageLocator that can be feed into #getImageData.
- *
- * @param index a BIF file index, where the EntityFileEntry is supposed to be.
- * @param bamEntry the entity to parse as a BAM file.
- */
-export function parseBamEntry(
-  index: BifIndex,
-  bamEntry: EntityFileEntry
-): Promise<BamV1ImageLocator> {
-  return new Promise((resolve) => {
-    const b = SmartBuffer.fromBuffer(index.buffer);
-    b.readOffset = bamEntry.offset;
-
-    const signature: string = unpad(b.readString(4));
-    const version: string = unpad(b.readString(4));
-
-    if (signature === 'BAMC') {
-      const uncompressedBam: UncompressedBamV1 = uncompressV1Bam(index, bamEntry);
-      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam.contents/*, bamEntry*/);
-      resolve({
-        bamSize: uncompressedBam.header.uncompressedDataLength,
-        buffer: uncompressedBam.contents,
-        header: bamHeader,
-        offsetToBAM: 0
-      });
-    } else if (version === 'V2') {
-      throw new Error('BAM V2 files are not supported.');
-    } else {
-      b.readOffset = bamEntry.offset;
-      const bamHeader: BamV1Header = parseV1BamHeader(b.readBuffer()/*, bamEntry*/);
-      resolve({
-        bamSize: bamEntry.size,
-        buffer: index.buffer,
-        header: bamHeader,
-        offsetToBAM: bamEntry.offset
-      });
-    }
-  });
-}
-
-function parseV1BamHeader(bamFile: Buffer/*, bamEntry: EntityFileEntry*/): BamV1Header {
+function parseV1BamHeader(bamFile: Buffer /*, bamEntry: EntityFileEntry*/): BamV1Header {
   const b = SmartBuffer.fromBuffer(bamFile);
 
   const signature = unpad(b.readString(4));
@@ -268,27 +223,7 @@ function uncompressV1Bam(index: BifIndex, bamEntry: EntityFileEntry): Uncompress
   return {
     contents: Buffer.from(uncompressedBamBuffer),
     header: { signature, version, uncompressedDataLength }
-  }
-}
-
-export function getImageData(
-  locator: BamV1ImageLocator,
-  { frame, bitmapMode }: { frame: number; bitmapMode: BitmapMode } = {
-    bitmapMode: 'RGBA',
-    frame: 0
-  }
-): Promise<BamV1Image> {
-  return new Promise((resolve) => {
-    const palette: BamPalette = buildColorsPalette(locator);
-    const frameHeader: BamFrame = parseFrameHeader(locator, frame);
-    const image: ImageData = processFrame(locator, palette, frameHeader, bitmapMode);
-
-    resolve({
-      frame: frameHeader,
-      image,
-      palette
-    });
-  });
+  };
 }
 
 /**
@@ -311,10 +246,7 @@ export function getImageData(
  *
  * @param locator a BamV1ImageLocator.
  */
-function buildColorsPalette(
-  locator: BamV1ImageLocator,
-): BamPalette {
-
+function buildColorsPalette(locator: BamV1ImageLocator): BamPalette {
   const offsets: number[] = [
     locator.header.frameLookUpTableOffset,
     locator.header.framesOffset,
@@ -380,6 +312,21 @@ function parseFrameHeader(locator: BamV1ImageLocator, frameWanted: number): BamF
   };
 
   return frameToDraw;
+}
+
+let lastProcessedFrame: DebugPixel[] = [];
+
+/**
+ * Sets debug information on the last processed frame.
+ *
+ * Useful for debugging, as the DebugPixel array allows
+ * to see the pixels of the image before they are decomposed
+ * into RGBA values.
+ *
+ * @param pixels latest frame processed by the function #processFrame
+ */
+function setLastProcessedFrame(pixels: DebugPixel[]) {
+  lastProcessedFrame = pixels;
 }
 
 /**
@@ -457,9 +404,8 @@ function processFrame(
         return output.concat([rgba.red, rgba.green, rgba.blue, rgba.alpha]);
       } else if (bitmapMode === 'ABGR') {
         return output.concat([rgba.alpha, rgba.blue, rgba.green, rgba.red]);
-      } else {
-        throw new Error('Impossible case but I have to put it anyway or typescript will kill me.');
       }
+      throw new Error('Impossible case but I have to put it anyway or typescript will kill me.');
     },
     [] as number[]
   );
@@ -471,21 +417,6 @@ function processFrame(
   };
 }
 
-let lastProcessedFrame: DebugPixel[] = [];
-
-/**
- * Sets debug information on the last processed frame.
- *
- * Useful for debugging, as the DebugPixel array allows
- * to see the pixels of the image before they are decomposed
- * into RGBA values.
- *
- * @param pixels latest frame processed by the function #processFrame
- */
-function setLastProcessedFrame(pixels: DebugPixel[]) {
-  lastProcessedFrame = pixels;
-}
-
 /**
  * Returns debug information about the last frame processed
  * by #processFrame.
@@ -495,4 +426,68 @@ function setLastProcessedFrame(pixels: DebugPixel[]) {
  */
 export function getLastProcessedFrameDebugInfo(): DebugPixel[] {
   return lastProcessedFrame;
+}
+
+export function getImageData(
+  locator: BamV1ImageLocator,
+  { frame, bitmapMode }: { frame: number; bitmapMode: BitmapMode } = {
+    bitmapMode: 'RGBA',
+    frame: 0
+  }
+): Promise<BamV1Image> {
+  return new Promise((resolve) => {
+    const palette: BamPalette = buildColorsPalette(locator);
+    const frameHeader: BamFrame = parseFrameHeader(locator, frame);
+    const image: ImageData = processFrame(locator, palette, frameHeader, bitmapMode);
+
+    resolve({
+      frame: frameHeader,
+      image,
+      palette
+    });
+  });
+}
+
+/**
+ * Parses a given EntityFileEntry as a BAM file, returning the header which can
+ * be used to find a given image in such file.
+ *
+ * Returns a promise with a BamV1ImageLocator that can be feed into #getImageData.
+ *
+ * @param index a BIF file index, where the EntityFileEntry is supposed to be.
+ * @param bamEntry the entity to parse as a BAM file.
+ */
+export function parseBamEntry(
+  index: BifIndex,
+  bamEntry: EntityFileEntry
+): Promise<BamV1ImageLocator> {
+  return new Promise((resolve) => {
+    const b = SmartBuffer.fromBuffer(index.buffer);
+    b.readOffset = bamEntry.offset;
+
+    const signature: string = unpad(b.readString(4));
+    const version: string = unpad(b.readString(4));
+
+    if (signature === 'BAMC') {
+      const uncompressedBam: UncompressedBamV1 = uncompressV1Bam(index, bamEntry);
+      const bamHeader: BamV1Header = parseV1BamHeader(uncompressedBam.contents /*, bamEntry*/);
+      resolve({
+        bamSize: uncompressedBam.header.uncompressedDataLength,
+        buffer: uncompressedBam.contents,
+        header: bamHeader,
+        offsetToBAM: 0
+      });
+    } else if (version === 'V2') {
+      throw new Error('BAM V2 files are not supported.');
+    } else {
+      b.readOffset = bamEntry.offset;
+      const bamHeader: BamV1Header = parseV1BamHeader(b.readBuffer() /*, bamEntry*/);
+      resolve({
+        bamSize: bamEntry.size,
+        buffer: index.buffer,
+        header: bamHeader,
+        offsetToBAM: bamEntry.offset
+      });
+    }
+  });
 }

@@ -3,12 +3,22 @@ import chaiAsPromised from 'chai-as-promised';
 import { readFileSync } from 'fs';
 import 'mocha';
 import { join } from 'path';
-import { DIALOG_DOT_TLK_FILENAME, getDialogsTable, getText, PopulatedDialogsTable } from '../src/infTlk';
+import {
+  DIALOG_DOT_TLK_FILENAME,
+  getDialogsTable,
+  getText,
+  PopulatedDialogsTable
+} from '../src/infTlk';
 import { MOCK_INSTALL } from './constants';
 
 chai.use(chaiAsPromised);
 
-const TEST_DIALOG_DOT_TLK_FILE_PATH: string = join(MOCK_INSTALL, 'lang', 'en_US', DIALOG_DOT_TLK_FILENAME);
+const TEST_DIALOG_DOT_TLK_FILE_PATH: string = join(
+  MOCK_INSTALL,
+  'lang',
+  'en_US',
+  DIALOG_DOT_TLK_FILENAME
+);
 
 const KNOWN_STRINGS = [
   { index: 0, value: '<NO TEXT>' },
@@ -50,7 +60,7 @@ describe('infTlk.ts', () => {
         });
     });
 
-    it('file header is properly read', function() {
+    it('file header is properly read', function toTest() {
       this.slow(1000);
       return getDialogsTable(BUFFER).then((dialogsIndex: PopulatedDialogsTable) => {
         expect(dialogsIndex.signature).to.be.equal('TLK ');
@@ -58,7 +68,7 @@ describe('infTlk.ts', () => {
       });
     });
 
-    it("should've read the strings table properly (testing against a few known values)", async function() {
+    it("should've read the strings table properly (testing against a few known values)", async function toTest() {
       this.slow(1000);
       return getDialogsTable(BUFFER).then((dialogsIndex: PopulatedDialogsTable) => {
         KNOWN_STRINGS.forEach(({ index, value }: { index: number; value: string }) => {

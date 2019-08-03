@@ -39,7 +39,6 @@ export function pad(stringToPad: string, charCount: number): string {
 export function unpad(stringToUnpad: string): string {
   if (stringToUnpad.indexOf('\u0000') === -1) {
     return stringToUnpad;
-  } else {
-    return stringToUnpad.slice(0, stringToUnpad.indexOf('\u0000'));
   }
+  return stringToUnpad.slice(0, stringToUnpad.indexOf('\u0000'));
 }

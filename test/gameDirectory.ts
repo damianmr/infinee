@@ -22,7 +22,7 @@ describe('gameDirectory.ts', () => {
         );
       }).to.throw(/is not a directory/);
     });
-  
+
     describe('fails if is not possible to read a basic game structure', () => {
       it('fails on missing data directory', (done) => {
         loadGameFolder(
@@ -34,7 +34,7 @@ describe('gameDirectory.ts', () => {
           done();
         });
       });
-  
+
       it('fails on missing dialog file', (done) => {
         loadGameFolder(
           SupportedGameFolders.BG2EE(
@@ -50,7 +50,7 @@ describe('gameDirectory.ts', () => {
           done();
         });
       });
-  
+
       it('fails on missing chitin.key file', (done) => {
         loadGameFolder(
           SupportedGameFolders.BG2EE(
@@ -62,20 +62,23 @@ describe('gameDirectory.ts', () => {
         });
       });
     });
-  
+
     it('removes unnecesary prefix parts from the paths', (done) => {
       loadGameFolder(
         SupportedGameFolders.BG2EE(
           mockDirStruct('bg2ee', ['chitin.key', 'data/some.bif', 'lang/de_DE/dialog.tlk'])
         )
       ).then((gameDir: FlatDirectoryStructure) => {
+        // eslint-disable-next-line no-unused-expressions
         expect(gameDir['chitin.key']).not.to.be.undefined;
+        // eslint-disable-next-line no-unused-expressions
         expect(gameDir['data/some.bif']).not.to.be.undefined;
+        // eslint-disable-next-line no-unused-expressions
         expect(gameDir['lang/de_DE/dialog.tlk']).not.to.be.undefined;
         done();
       });
     });
-  
+
     // TODO Make this test
     // I am not making it right now because the tests that make use of
     // MatcherResultsUnsorted are already checking this, but I want to remove those tests
@@ -91,4 +94,3 @@ describe('gameDirectory.ts', () => {
     it('fails if a given BifEntry does no does not exists.');
   });
 });
-

@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { pad, unpad } from '../../src/util/legacyFilenamePadding';
 
 describe('Padding in legacy filenames', () => {
-
   it('should add "\\u0000" to strings', () => {
     expect(pad('h', 8)).to.be.equal('h\u0000\u0000\u0000\u0000\u0000\u0000\u0000');
     expect(pad('he', 8)).to.be.equal('he\u0000\u0000\u0000\u0000\u0000\u0000');
@@ -19,5 +18,4 @@ describe('Padding in legacy filenames', () => {
     expect(unpad('Hello W ')).to.be.equal('Hello W ');
     expect(unpad('Hello World')).to.be.equal('Hello World');
   });
-
 });

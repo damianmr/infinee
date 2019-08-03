@@ -47,7 +47,7 @@ describe('infKey.ts', () => {
         });
     });
 
-    it('file header is properly read', function(done) {
+    it('file header is properly read', function toTest(done) {
       this.slow(8000); // Threshold for the test to be considered "slow"
       this.timeout(10000); // Reading the whole file takes a while, we need more timeout than the default.
       getGameResourceIndex(BUFFER).then((gameResourceIndex: GameResourceIndex) => {
@@ -74,7 +74,8 @@ describe('infKey.ts', () => {
       expect(gameResourceIndex.resources[ResourceTypeID.CRE].length).to.be.equal(4735);
       expect(gameResourceIndex.resources[ResourceTypeID.IDS].length).to.be.equal(72);
       expect(gameResourceIndex.resources[ResourceTypeID.TWO_DA].length).to.be.equal(611);
-      expect(gameResourceIndex.resources[ResourceTypeID.BS]).to.be.undefined; // tslint:disable-line:no-unused-expression
+      // eslint-disable-next-line no-unused-expressions
+      expect(gameResourceIndex.resources[ResourceTypeID.BS]).to.be.undefined;
     });
 
     it('got the expected resources', () => {
@@ -97,7 +98,7 @@ describe('infKey.ts', () => {
         return value.name === knownResources[3].name;
       });
       // console.log(gameResourceIndex.resources[ResourceTypeID.IDS]);
-      // tslint:disable-next-line:no-unused-expression
+      // eslint-disable-next-line no-unused-expressions
       expect(item1).to.not.be.undefined;
       if (!item1) {
         throw new Error();
@@ -166,7 +167,6 @@ describe('infKey.ts', () => {
     });
 
     describe('Testing #findBifForResource', () => {
-
       it('it should find a BIF file information based on a ResourceInfo');
     });
 
@@ -178,8 +178,6 @@ describe('infKey.ts', () => {
   });
 
   describe('getter methods', () => {
-
     it('returns all resources information in the index (getAllResources)');
-
   });
 });

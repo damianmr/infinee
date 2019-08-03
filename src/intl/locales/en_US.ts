@@ -1,4 +1,3 @@
-// tslint:disable:object-literal-sort-keys
 export default {
   resourceType: {
     '1': 'BMP', // 0x0001
@@ -13,4 +12,4 @@ export default {
     '1012': '2DA', // 0x03f4
     '1017': 'BS' // 0x03f9
   }
-}
+};

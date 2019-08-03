@@ -72,10 +72,10 @@ export default function GameFolderDropZone() {
 
   return (
     <DropArea
-      ref={dropZoneRef}
       isDraggingSomething={draggingOverWindow}
-      onDrop={onDrop}
       onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      ref={dropZoneRef}
     >
       <DropHereSign isDraggingSomething={draggingOverWindow}>
         <span>Drop your BG2:EE folder here!</span>

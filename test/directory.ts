@@ -6,19 +6,14 @@ import {
   createFilePointers,
   FlatDirectoryStructure,
   FlatDirectoryStructureAsEntries,
-  readDirContents,
+  readDirContents
 } from '../src/directory';
-import {
-  DirectoryEntryMock,
-  DirectoryReaderMock,
-  FileMock,
-} from './mocks/fileSystem';
+import { DirectoryEntryMock, DirectoryReaderMock, FileMock } from './mocks/fileSystem';
 import { mockDirStruct } from './mocks/fileSystemUtil';
 
 chai.use(chaiAsPromised);
 
 describe('directory.ts', () => {
-
   describe('readDirContents function', () => {
     it('properly returns a promise with all the entries in a given DirectoryEntry', (done) => {
       const mockFolder = mockDirStruct('Test Mock Folder', [
@@ -27,7 +22,7 @@ describe('directory.ts', () => {
         'subfolderVisible/thisFolderIsInvisible',
         'visible.jpg'
       ]);
-      readDirContents(mockFolder).then(({ entries/*, directory */}) => {
+      readDirContents(mockFolder).then(({ entries /*, directory */ }) => {
         expect(entries.length).to.be.equal(3);
         expect(entries[0].name).to.be.eql('entry1.gif');
         expect(entries[1].name).to.be.eql('subfolderVisible');
@@ -44,7 +39,7 @@ describe('directory.ts', () => {
         'entry2.jpg',
         'entry3.png'
       ]);
-      readDirContents(mockFolder).then(({ entries/*, directory */}) => {
+      readDirContents(mockFolder).then(({ entries /*, directory */ }) => {
         expect(entries.length).to.be.equal(5);
         expect(entries[0].name).to.be.eql('entry1.gif');
         expect(entries[1].name).to.be.eql('subfolder1');
@@ -134,5 +129,4 @@ describe('directory.ts', () => {
         });
     });
   });
-
 });
