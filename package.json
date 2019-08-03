@@ -25,18 +25,21 @@
     "bmp-js": "^0.1.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^6.0.1",
-    "eslint-plugin-react": "^7.14.2",
+    "eslint": "6.0.1",
+    "eslint-config-prettier": "4.1.0",
+    "eslint-plugin-react": "7.14.2",
+    "eslint-plugin-prettier": "3.0.1",
     "mocha": "^5.2.0",
     "pako": "^1.0.10",
     "parcel-bundler": "^1.11.0",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
+    "prettier": "1.16.4",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
     "smart-buffer": "^4.0.1",
     "styled-components": "^4.2.0",
     "tachyons": "^4.11.1",
     "ts-node": "^7.0.1",
-    "typescript": "^3.2.2"
+    "typescript": "3.4.2"
   },
   "dependencies": {}
 }
